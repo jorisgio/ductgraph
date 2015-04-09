@@ -1,0 +1,4 @@
+[package]
+name = "ductgraph"
+version = "0.0.1"
+authors = ["Joris Giovannangeli <joris@giovannangeli.fr>"]
