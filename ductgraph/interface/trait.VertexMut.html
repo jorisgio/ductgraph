@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `VertexMut` trait in crate `ductgraph`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, VertexMut">
+
+    <title>ductgraph::interface::VertexMut - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='../index.html'>ductgraph</a>::<wbr><a href='index.html'>interface</a></p><script>window.sidebarCurrent = {name: 'VertexMut', ty: 'trait', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content trait">
+<h1 class='fqn'><span class='in-band'>Trait <a href='../index.html'>ductgraph</a>::<wbr><a href='index.html'>interface</a>::<wbr><a class='trait' href=''>VertexMut</a><wbr></span><span class='out-of-band'><span id='render-detail'>
+            <a id="collapse-all" href="#">[-]</a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-689' href='../../src/ductgraph/interface.rs.html#172-180'>[src]</a></span></h1>
+<pre class='rust trait'>pub trait VertexMut {
+    type Label;
+    type LabelGuard: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.DerefMut.html' title='core::ops::DerefMut'>DerefMut</a>&lt;Target=Self::<a class='trait' href='../../ductgraph/interface/trait.VertexMut.html' title='ductgraph::interface::VertexMut'>Label</a>&gt;;
+
+    fn <a href='#tymethod.label_mut' class='fnname'>label_mut</a>(self) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;Self::<a class='trait' href='../../ductgraph/interface/trait.VertexMut.html' title='ductgraph::interface::VertexMut'>LabelGuard</a>&gt;;
+}</pre><div class='docblock'><p>Mutable operations on a vertex entry.</p>
+</div>
+            <h2 id='associated-types'>Associated Types</h2>
+            <div class='methods'>
+        <h3 id='associatedtype.Label' class='method'><a class='stability Unmarked' title='No stability level'></a><code>type Label</code></h3><div class='docblock'><p>The type of a vertex label.</p>
+</div><h3 id='associatedtype.LabelGuard' class='method'><a class='stability Unmarked' title='No stability level'></a><code>type LabelGuard: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.DerefMut.html' title='core::ops::DerefMut'>DerefMut</a>&lt;Target=Self::<a class='trait' href='../../ductgraph/interface/trait.VertexMut.html' title='ductgraph::interface::VertexMut'>Label</a>&gt;</code></h3><div class='docblock'><p>Potentially a RAII guard dereferencing to a vertex label reference.</p>
+</div></div>
+            <h2 id='required-methods'>Required Methods</h2>
+            <div class='methods'>
+        <h3 id='tymethod.label_mut' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#tymethod.label_mut' class='fnname'>label_mut</a>(self) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;Self::<a class='trait' href='../../ductgraph/interface/trait.VertexMut.html' title='ductgraph::interface::VertexMut'>LabelGuard</a>&gt;</code></h3><div class='docblock'><p>Returns a mutable reference to the label of the vertex if the vertex entry exists.</p>
+</div></div>
+        <h2 id='implementors'>Implementors</h2>
+        <ul class='item-list' id='implementors-list'>
+    <li><a class='stability Unmarked' title='No stability level'></a><code>impl&lt;'b, 'a, VLabel, Map, Q, S, Dir&gt; <a class='trait' href='../../ductgraph/interface/trait.VertexMut.html' title='ductgraph::interface::VertexMut'>VertexMut</a> for &amp;'b mut <a class='struct' href='../../ductgraph/graph/edgemap/struct.MapGraphEntry.html' title='ductgraph::graph::edgemap::MapGraphEntry'>MapGraphEntry</a>&lt;<a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;'a mut VLabel&gt;, &amp;'a mut Map, S, <a class='struct' href='../../ductgraph/graph/struct.Abstract.html' title='ductgraph::graph::Abstract'>Abstract</a>, Dir, &amp;'a Q&gt; <span class='where'>where Dir: <a class='trait' href='../../ductgraph/interface/trait.Direction.html' title='ductgraph::interface::Direction'>Direction</a></span></code></li>
+<li><a class='stability Unmarked' title='No stability level'></a><code>impl&lt;'b, 'a, Label, MapTo, Dir&gt; <a class='trait' href='../../ductgraph/interface/trait.VertexMut.html' title='ductgraph::interface::VertexMut'>VertexMut</a> for &amp;'b mut <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;'a mut <a class='struct' href='../../ductgraph/graph/adjlist/struct.AdjVertex.html' title='ductgraph::graph::adjlist::AdjVertex'>AdjVertex</a>&lt;Label, MapTo, <a class='struct' href='../../ductgraph/graph/struct.Abstract.html' title='ductgraph::graph::Abstract'>Abstract</a>, Dir&gt;&gt;</code></li>
+<li><a class='stability Unmarked' title='No stability level'></a><code>impl&lt;'a, Label: 'a, T: 'a, Node: 'a&gt; <a class='trait' href='../../ductgraph/interface/trait.VertexMut.html' title='ductgraph::interface::VertexMut'>VertexMut</a> for &amp;'a T <span class='where'>where T: NodeCellLockMut&lt;'a, Node=Node&gt;, Node: NodeLike&lt;Label=Label&gt;</span></code></li>
+</ul><script type="text/javascript" async
+                              src="../../implementors/ductgraph/interface/trait.VertexMut.js">
+                      </script></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "ductgraph";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script async src="../../search-index.js"></script>
+</body>
+</html>

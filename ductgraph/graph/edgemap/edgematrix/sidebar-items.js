@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["VecMatrix","A two dimensions array of edges."]]});

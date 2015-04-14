@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `interface` mod in crate `ductgraph`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, interface">
+
+    <title>ductgraph::interface - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='../index.html'>ductgraph</a></p><script>window.sidebarCurrent = {name: 'interface', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>ductgraph</a>::<wbr><a class='mod' href=''>interface</a><wbr></span><span class='out-of-band'><span id='render-detail'>
+            <a id="collapse-all" href="#">[-]</a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-4' href='../../src/ductgraph/interface.rs.html#1-218'>[src]</a></span></h1>
+<div class='docblock'><p>Collection of traits providing operations on a generic graph data structure</p>
+</div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.Directed.html'
+                               title='ductgraph::interface::Directed'>Directed</a></td>
+                        <td class='docblock short'><p>Marker for directed edges : an edge from A to B is not the same as an edge from B to A.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.Undirected.html'
+                               title='ductgraph::interface::Undirected'>Undirected</a></td>
+                        <td class='docblock short'><p>Marker for undirected edges : an edge between A and B is the same as an edge between B and A.</p>
+</td>
+                    </tr>
+                </table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.ConcreteGraphLike.html'
+                               title='ductgraph::interface::ConcreteGraphLike'>ConcreteGraphLike</a></td>
+                        <td class='docblock short'><p>Immutable operations on graphs.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.Direction.html'
+                               title='ductgraph::interface::Direction'>Direction</a></td>
+                        <td class='docblock short'><p>Marker trait implemented on both edge direction markers : <code>Directed</code> and <code>Undirected</code></p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.Edge.html'
+                               title='ductgraph::interface::Edge'>Edge</a></td>
+                        <td class='docblock short'><p>Immutable operations on any edge starting from a vertex.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.EdgeEntry.html'
+                               title='ductgraph::interface::EdgeEntry'>EdgeEntry</a></td>
+                        <td class='docblock short'><p>Unstable operations on any edge starting from a vertex.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.EdgeMut.html'
+                               title='ductgraph::interface::EdgeMut'>EdgeMut</a></td>
+                        <td class='docblock short'><p>Mutable operations on any edge starting from a vertex.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.Edges.html'
+                               title='ductgraph::interface::Edges'>Edges</a></td>
+                        <td class='docblock short'><p>Constructs an iterator on the edges starting from a vertex.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.EdgesMut.html'
+                               title='ductgraph::interface::EdgesMut'>EdgesMut</a></td>
+                        <td class='docblock short'><p>Constructs an iterator on the edges starting from a vertex, yielding mutable references to the
+edge label.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.Graph.html'
+                               title='ductgraph::interface::Graph'>Graph</a></td>
+                        <td class='docblock short'><p>A graph tructure.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.GraphLike.html'
+                               title='ductgraph::interface::GraphLike'>GraphLike</a></td>
+                        <td class='docblock short'><p>A Graph structure with immutable operations on the vertices.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.GraphLikeEntry.html'
+                               title='ductgraph::interface::GraphLikeEntry'>GraphLikeEntry</a></td>
+                        <td class='docblock short'><p>A Graph structure with unstable structural operations on the vertices.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.GraphLikeMut.html'
+                               title='ductgraph::interface::GraphLikeMut'>GraphLikeMut</a></td>
+                        <td class='docblock short'><p>A Graph structure with mutable operations on the vertices.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.Vertex.html'
+                               title='ductgraph::interface::Vertex'>Vertex</a></td>
+                        <td class='docblock short'><p>Immutable operations on a vertex entry.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.VertexCreate.html'
+                               title='ductgraph::interface::VertexCreate'>VertexCreate</a></td>
+                        <td class='docblock short'><p>Vertex construction operation.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.VertexEntry.html'
+                               title='ductgraph::interface::VertexEntry'>VertexEntry</a></td>
+                        <td class='docblock short'><p>Unstable operations on a vertex entry.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.VertexMut.html'
+                               title='ductgraph::interface::VertexMut'>VertexMut</a></td>
+                        <td class='docblock short'><p>Mutable operations on a vertex entry.</p>
+</td>
+                    </tr>
+                </table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "ductgraph";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script async src="../../search-index.js"></script>
+</body>
+</html>

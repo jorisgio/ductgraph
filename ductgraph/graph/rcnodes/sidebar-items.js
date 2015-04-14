@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["EdgeGuard",""],["EdgeLabelGuardMut",""],["EdgesGuard",""],["LabelGuard",""],["NodeCell","A generic wrapper for nodes protecting from concurrent accesses with Read/Write semantic"]],"type":[["ArcNode",""],["ELock",""],["RcNode",""]],"trait":[["AsVertex",""],["AsVertexMut",""]],"mod":[["btree",""],["hash",""],["veclist",""]]});

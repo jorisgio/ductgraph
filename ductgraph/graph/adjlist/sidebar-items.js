@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["AdjGraph",""],["AdjGraphEntry",""],["AdjVertex",""],["Neighbors",""],["NeighborsMut",""]]});

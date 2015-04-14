@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["adjlist",""],["edgemap",""],["rcnodes",""]],"struct":[["Abstract","A marker for abstract graphs"],["Concrete","A marker for concrete graphs"],["Stable","A marker for stable graphs"],["Unstable","A marker for unstable graphs"]]});

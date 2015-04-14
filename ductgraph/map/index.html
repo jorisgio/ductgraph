@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `map` mod in crate `ductgraph`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, map">
+
+    <title>ductgraph::map - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='../index.html'>ductgraph</a></p><script>window.sidebarCurrent = {name: 'map', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>ductgraph</a>::<wbr><a class='mod' href=''>map</a><wbr></span><span class='out-of-band'><span id='render-detail'>
+            <a id="collapse-all" href="#">[-]</a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-736' href='../../src/ductgraph/map.rs.html#1-731'>[src]</a></span></h1>
+<div class='docblock'><p>A generic interface on Map datastructures.</p>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
+<table><tr><td><code>pub use self::<a class='mod'
+                                            href='./vec_list/index.html'>vec_list</a>::<a class='struct' href='../../ductgraph/map/vec_list/struct.VecListMap.html' title='ductgraph::map::vec_list::VecListMap'>VecListMap</a>;</code></td></tr><tr><td><code>pub use self::<a class='mod'
+                                            href='./stable_vec_map/index.html'>stable_vec_map</a>::<a class='struct' href='../../ductgraph/map/stable_vec_map/struct.StableVecMap.html' title='ductgraph::map::stable_vec_map::StableVecMap'>StableVecMap</a>;</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='mod' href='stable_vec_map/index.html'
+                               title='ductgraph::map::stable_vec_map'>stable_vec_map</a></td>
+                        <td class='docblock short'><p>A stable Map from unsigned integer keys to any value implemented as a vector.
+Search is in constant time</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='mod' href='vec_list/index.html'
+                               title='ductgraph::map::vec_list'>vec_list</a></td>
+                        <td class='docblock short'><p>A simple Map implemented as a list of key-value tuples in a <code>Vec</code>
+Provide linear time search, constant time removal and inserstion</p>
+</td>
+                    </tr>
+                </table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Stable' title='Stable'></a><a class='struct' href='struct.BTreeMap.html'
+                               title='ductgraph::map::BTreeMap'>BTreeMap</a></td>
+                        <td class='docblock short'><p>A map based on a B-Tree.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Stable' title='Stable'></a><a class='struct' href='struct.HashMap.html'
+                               title='ductgraph::map::HashMap'>HashMap</a></td>
+                        <td class='docblock short'><p>A hash map implementation which uses linear probing with Robin
+Hood bucket stealing.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.IterOrder.html'
+                               title='ductgraph::map::IterOrder'>IterOrder</a></td>
+                        <td class='docblock short'><p>An iterator on an orderalence class defined by external order between Q and the key</p>
+</td>
+                    </tr>
+                </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='enum' href='enum.ExtOrdering.html'
+                               title='ductgraph::map::ExtOrdering'>ExtOrdering</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                </table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.Entry.html'
+                               title='ductgraph::map::Entry'>Entry</a></td>
+                        <td class='docblock short'><p>A view into a single key-value pair placeholder in the map, which might already exists or be
+empty.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.ExternalOrd.html'
+                               title='ductgraph::map::ExternalOrd'>ExternalOrd</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.FixedMap.html'
+                               title='ductgraph::map::FixedMap'>FixedMap</a></td>
+                        <td class='docblock short'><p>A mapping from Keys to Values with lookup functionnality for any type <code>Q</code> orderalent to the Key
+type</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.FixedSizedMap.html'
+                               title='ductgraph::map::FixedSizedMap'>FixedSizedMap</a></td>
+                        <td class='docblock short'><p>A mapping from Keys to Values which can be extended with new mappings, but have a predefined
+size.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.GrowableMap.html'
+                               title='ductgraph::map::GrowableMap'>GrowableMap</a></td>
+                        <td class='docblock short'><p>A mapping from Keys to values which can be extended with new mappings but has no predefined
+size.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.InternalIterator.html'
+                               title='ductgraph::map::InternalIterator'>InternalIterator</a></td>
+                        <td class='docblock short'><p>In place filtering operation on map.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.InternalMap.html'
+                               title='ductgraph::map::InternalMap'>InternalMap</a></td>
+                        <td class='docblock short'><p>A Mapping from Keys to Values which are append only</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.InternalStableMap.html'
+                               title='ductgraph::map::InternalStableMap'>InternalStableMap</a></td>
+                        <td class='docblock short'><p>A mapping from Keys to Values which can be extends with new mappings and from which values
+associated to a key can be retrived and modified. But the mapping is only exenstible with
+<em>values</em>. The key the new value is associated too is computed by the map itself.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.IntoOrder.html'
+                               title='ductgraph::map::IntoOrder'>IntoOrder</a></td>
+                        <td class='docblock short'><p>Convert a mapping into an iterator on a orderalence class of the key-value pairs.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.Map.html'
+                               title='ductgraph::map::Map'>Map</a></td>
+                        <td class='docblock short'><p>An unstable mapping from Keys to Values.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.MapEntry.html'
+                               title='ductgraph::map::MapEntry'>MapEntry</a></td>
+                        <td class='docblock short'><p>A mapping from Keys to Value which supports access and modification through the use of view
+into a single location in the map.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.MapOwned.html'
+                               title='ductgraph::map::MapOwned'>MapOwned</a></td>
+                        <td class='docblock short'><p>Any mapping from elements of type <code>Key</code> to elements of type <code>Value</code></p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.Occupied.html'
+                               title='ductgraph::map::Occupied'>Occupied</a></td>
+                        <td class='docblock short'><p>A view into a single occupied location in a Map.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.StableMap.html'
+                               title='ductgraph::map::StableMap'>StableMap</a></td>
+                        <td class='docblock short'><p>A mapping from Keys to Values which can be extended with new mappings and from which values
+associated to a key can be retrieved and modified.
+The mapping is stable in the sense that no key-value pair can ever be removed.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.UnstableFixedSizedMap.html'
+                               title='ductgraph::map::UnstableFixedSizedMap'>UnstableFixedSizedMap</a></td>
+                        <td class='docblock short'><p>An unstable mapping from Keys to Values. Supports removal of key-value pairs, but the map has a
+fixed size.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='trait' href='trait.Vacant.html'
+                               title='ductgraph::map::Vacant'>Vacant</a></td>
+                        <td class='docblock short'><p>A view into a single empty location in a Map.</p>
+</td>
+                    </tr>
+                </table><h2 id='impls' class='section-header'><a href="#impls">Implementations</a></h2>
+<table></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "ductgraph";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script async src="../../search-index.js"></script>
+</body>
+</html>
