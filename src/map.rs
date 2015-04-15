@@ -534,6 +534,7 @@ pub mod vec_list {
 
     /// A simple Map implemented as a list of key-value pair in a `Vec`
     /// Provide linear time search, constant time removal and inserstion
+    #[derive(Default)]
     pub struct VecListMap<K, V> {
         vec : Vec<VecMapTuple<K, V>>,
     }

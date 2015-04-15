@@ -225,6 +225,141 @@ pub struct MapGraph<U, Map, VMap, S, A, D> {
     marker : PhantomData<(S, A, D)>,
 }
 
+/// Declare the type of a MapGraph
+///
+/// # Overview
+///
+/// In a MapGraph, edges are kept in a single Map. The keys are tuples (see `EdgeTuple`) of vertex handles and the
+/// value the label of the edges. For `Abstract` graphs, the mapping between vertex handles and
+/// vertex labels is kept in a separate Map.
+///
+/// # Macro invocation
+///
+/// This macro declares a type for a particular MapGraph implementation.
+///
+/// ## Generic parameters 
+///
+/// - The first argument, `$name`, is the name of the declared type.
+/// - The second argument is either `Concrete`, to declare a concrete graph, or `Abstract`, to
+/// declare an abstract graph.
+/// - The third argument is either `Directed` or `Undirected`, 
+///
+/// ## Concrete graphs 
+///
+/// For concrete graphs (the second parameter is `Concrete`), the macro takes two other parameters
+/// :
+///
+/// - `$vertex`, the type of vertex handles,
+/// - and `$map`, the type of the edges map.
+///
+/// ### Example
+///
+/// ```
+/// # #[macro_use] extern crate ductgraph;
+/// # fn main() {
+/// use ductgraph::map::BTreeMap;
+/// use ductgraph::interface::Directed;
+/// use ductgraph::uuid::UnitFactory;
+/// use ductgraph::graph::{Unstable, Concrete};
+/// use ductgraph::graph::edgemap::{MapGraph, EdgeTuple};
+///
+/// mapgraph_type! { MyGraph, Concrete, Directed, usize, BTreeMap };
+///
+/// let graph : MyGraph<u32> = MapGraph::new();
+///
+/// # }
+/// ```
+///
+/// This will declare a `type MyGraph<Label>` with `Directed` edges kept in a `BTreeMap` and using
+/// `usize` as vertex handles, and create a new graph of this type.
+///
+/// The `Label` parameter of the new type is the type of edge labels.
+///
+/// ## Abstract graphs
+///
+/// For abstract graphs (the second parameter is `Abstract`, the macro takes five more parameters
+/// :
+///
+/// - `$factory`, the handles factory, one of :
+///     - `Factory<F>`, where `F` is any type implementing `UUIDFactory`. In this case, handles are
+///     internally created.
+///     - `UnitFactory`. In this case, you have to pass the handle and the label at the vertex
+///     creation.
+///     - `InternalFactory`. This is a particular kind of dummy factory to be used with the a
+///     vertex map which implements `InternalStableMap` instead of `Map`. In this case, the handles
+///     are internally created but you cannot control their generation.
+/// - `$stable`, the stability of the graph, either :
+///     - `Stable`, vertices can be added to the graph but not removed.
+///     - `Unstable`, vertices can be added and removed to the graph. This is option is not avaible
+///     when the factory parameter is `InternalFactory`.
+/// - `$map`, the type of map used to keep the edges.
+/// - `$vmap`, the type of map used to keep vertices.
+/// -  If the `$factory` parameter is not `Factory<F>`, the macro invocation takes one more
+/// paramater, `$vertex`, which is the type of the vertex handles to use.
+///
+/// ## Example 1
+///
+/// Declare an `Abstract` graph, with `Undirected` edges, which will autogenerate the handles using
+/// an `usize` counter and store the edges in a `BTreeMap` and the vertices in an `HashMap` :
+///
+///
+/// ```
+/// # #[macro_use] extern crate ductgraph;
+/// # fn main() {
+/// use ductgraph::map::{BTreeMap, HashMap};
+/// use ductgraph::uuid::{UUIDFactory, Factory};
+/// use ductgraph::interface::Undirected;
+/// use ductgraph::graph::edgemap::{MapGraph, EdgeTuple};
+/// use ductgraph::graph::{Stable, Abstract};
+///
+/// mapgraph_type!{ MyGraph, Abstract, Undirected, Factory<usize>, Stable, BTreeMap, HashMap};
+///
+/// let graph : MyGraph<String, u32>  = MapGraph::new();
+/// # }
+/// ```
+/// The last statement will create a new graph of this kind with vertices labeled with a `String`
+/// and edges labeled with an `u32`.
+///
+/// ## Example 2
+///
+/// Declare an `Abstract` graph with `Directed` edges kept in a `BTreeMap` and vertices with
+/// `String` handles :
+///
+/// ```
+/// # #[macro_use] extern crate ductgraph;
+/// # fn main() {
+/// use ductgraph::map::{BTreeMap, HashMap};
+/// use ductgraph::uuid::UnitFactory;
+/// use ductgraph::graph::edgemap::{MapGraph, EdgeTuple};
+/// use ductgraph::interface::Directed;
+/// use ductgraph::graph::{Unstable, Abstract};
+///
+/// mapgraph_type!{ MyGraph, Abstract, Directed, UnitFactory, Unstable, BTreeMap, HashMap, String };
+///
+/// let graph : MyGraph<u8, u8> = MapGraph::new();
+/// # }
+/// ```
+///
+/// ## Example 3
+///
+/// Declare an `Abstract` graph with `Directed` edges kept in a adjacency matrix with internal
+/// handles for vertex kept in a vector :
+///
+/// ```
+/// # #[macro_use] extern crate ductgraph;
+/// # fn main() {
+/// use ductgraph::map::StableVecMap;
+/// use ductgraph::uuid::InternalFactory;
+/// use ductgraph::graph::edgemap::{MapGraph, EdgeTuple};
+/// use ductgraph::interface::Directed;
+/// use ductgraph::graph::{Stable, Abstract};
+/// use ductgraph::graph::edgemap::edgematrix::VecMatrix;
+///
+/// mapgraph_type!{ MyGraph, Abstract, Directed, InternalFactory, Stable, VecMatrix, StableVecMap,
+/// u32};
+///
+/// # }
+/// ```
 #[macro_export]
 macro_rules! mapgraph_type {
     ($name:ident, Concrete, Directed, $vertex:ident, $map:ident) =>
@@ -251,12 +386,12 @@ macro_rules! mapgraph_type {
         (type $name<Label, ELabel> =
          MapGraph<Factory<$uuid>, $map<EdgeTuple<<$uuid as UUIDFactory>::UUID, Undirected>, ELabel>, $vmap<<$uuid as UUIDFactory>::UUID, Label>, $stable, Abstract, Undirected>;);
 
-    ($name:ident, Abstract, Directed, InternalFactory, Stable, $map:ident, $vmap:ident, $vertex:ty) =>
+    ($name:ident, Abstract, Directed, InternalFactory, Stable, VecMatrix, $vmap:ident, $vertex:ty) =>
         (type $name<Label, ELabel> =
-         MapGraph<UnitFactory, $map<EdgeTuple<$vertex, Directed>, ELabel>, $vmap<$vertex, Label>, $stable, Abstract, Directed>;);
-    ($name:ident, Abstract, Undirected, InternalFactory, Stable, $map:ident, $vmap:ident, $vertex:ty) =>
+         MapGraph<InternalFactory, VecMatrix<$vertex, ELabel, Directed>, $vmap<$vertex, Label>, Stable, Abstract, Directed>;);
+    ($name:ident, Abstract, Undirected, InternalFactory, Stable, VecMatrix, $vmap:ident, $vertex:ty) =>
         (type $name<Label, ELabel> 
-         MapGraph<UnitFactory, $map<EdgeTuple<$vertex, Undirected>, ELabel>, $vmap<$vertex, Label>, $stable, Abstract, Undirected>;);
+         MapGraph<InternalFactory, VecMatrix<$vertex, ELabel, Undirected>, $vmap<$vertex, Label>, Stable, Abstract, Undirected>;);
 }
 
 

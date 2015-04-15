@@ -1,7 +1,7 @@
 //! Various implementations of a graph datastructure
 #[macro_use] pub mod edgemap;
 #[macro_use] pub mod adjlist;
-pub mod rcnodes;
+//pub mod rcnodes;
 
 /// A marker for stable graphs
 ///
