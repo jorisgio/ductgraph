@@ -58,9 +58,9 @@ trait IsConnected<To> {
 
 impl<V : Ord> ExternalOrd<V> for EdgeTuple<V, Directed> {
     #[inline]
-    fn ext_cmp(&self, to : &V) -> ExtOrdering {
+    fn ext_cmp(&self, to : &V) -> ExtOrdering<&V> {
         match self.from.cmp(to) {
-            Ordering::Equal => ExtOrdering::Equal,
+            Ordering::Equal => ExtOrdering::Equal(&self.to),
             Ordering::Less => ExtOrdering::Less,
             Ordering::Greater => ExtOrdering::Greater,
         }
@@ -69,10 +69,11 @@ impl<V : Ord> ExternalOrd<V> for EdgeTuple<V, Directed> {
 
 impl<V : Ord> ExternalOrd<V> for EdgeTuple<V, Undirected> {
     #[inline]
-    fn ext_cmp(&self, to : &V) -> ExtOrdering {
+    fn ext_cmp(&self, to : &V) -> ExtOrdering<&V> {
         use std::cmp::Ordering::*;
         match (self.from.cmp(to), self.to.cmp(to)) {
-            (Equal, _) | (_, Equal) => ExtOrdering::Equal,
+            (Equal, _) => ExtOrdering::Equal(&self.to),
+            (_, Equal) => ExtOrdering::Equal(&self.from),
             (Less, Less) => ExtOrdering::Less,
             (Greater, Greater) => ExtOrdering::Greater,
             _ => ExtOrdering::Partial,
@@ -684,70 +685,39 @@ EdgeTuple<V, Dir> : IsConnected<Q> + Clone,
     }
 }
 
-pub struct Neighbors<I, V, D : Direction> {
-    iter : I,
-    v : V,
-    direction : PhantomData<D>,
-}
-
-impl<'a, Q, V, Label, I> Iterator for Neighbors<I, &'a Q, Directed> where
-I : Iterator<Item = (&'a EdgeTuple<V, Directed>, Label)>,
-{
-    type Item = (&'a V, Label);
-
-    #[inline]
-    fn next(&mut self) -> Option<(&'a V, Label)> {
-        self.iter.next()
-            .map(|(e, l)| (&e.to, l))
-    }
-}
-
-impl<'a, Q : Eq, V, Label, I> Iterator for Neighbors<I, &'a Q, Undirected> where
-I : Iterator<Item = (&'a EdgeTuple<V, Undirected>, Label)>,
-V : Borrow<Q>
-{
-    type Item = (&'a V,  Label);
-
-    #[inline]
-    fn next(&mut self) -> Option<(&'a V, Label)> {
-        self.iter.next()
-            .map(|(e, l)| if e.from.borrow() == self.v { (&e.to, l) } else { (&e.from, l) })
-    }
-}
-
 impl<'b, 'a : 'b, V, A, S, Dir, Vert, Q, Map, Label> Edges<'b> 
 for &'b MapGraphEntry<Vert, &'a Map, S, A, Dir, &'a Q>
 where
-&'b Map : IntoOrder<'b, Q>,
-Neighbors<<&'b Map as IntoOrder<'b, Q>>::IntoOrder, &'b Q, Dir> : Iterator<Item = (&'b V, &'b Label)>,
+&'b Map : IntoOrder<'b, Q, Key = V, Value =Label>,
+<&'b Map as IntoOrder<'b, Q>>::IntoOrder : Iterator<Item = (&'b V, &'b Label)>,
 Dir : Direction,
 V : Borrow<Q>,
 Q : Eq,
 {
     type V = V;
     type Label = Label;
-    type Edges = Neighbors<<&'b Map as IntoOrder<'b, Q>>::IntoOrder, &'b Q, Dir>;
+    type Edges = <&'b Map as IntoOrder<'b, Q>>::IntoOrder;
 
-    fn edges(self) -> Neighbors<<&'b Map as IntoOrder<'b, Q>>::IntoOrder, &'b Q, Dir> {
-        Neighbors { iter : (& self.map).into_order(self.q), v : self.q, direction : PhantomData }
+    fn edges(self) -> <&'b Map as IntoOrder<'b, Q>>::IntoOrder {
+        (& self.map).into_order(self.q)
     }
 }
 
 impl<'b, 'a : 'b, V, A, S, Dir, Vert, Q, Map, Label> EdgesMut<'b> 
 for &'b mut MapGraphEntry<Vert, &'a mut Map, S, A, Dir, &'a Q>
 where
-&'b mut Map : IntoOrder<'b, Q>,
-Neighbors<<&'b mut Map as IntoOrder<'b, Q>>::IntoOrder, &'b Q, Dir> : Iterator<Item = (&'b V, &'b mut Label)>,
+&'b mut Map : IntoOrder<'b, Q, Key = V, Value = Label>,
+<&'b mut Map as IntoOrder<'b, Q>>::IntoOrder : Iterator<Item = (&'b V, &'b mut Label)>,
 V : Borrow<Q>,
 Dir : Direction,
 Q : Eq,
 {
     type Label = Label;
     type V = V;
-    type Edges = Neighbors<<&'b mut Map as IntoOrder<'b, Q>>::IntoOrder, &'b Q, Dir>;
+    type Edges = <&'b mut Map as IntoOrder<'b, Q>>::IntoOrder;
 
-    fn edges_mut(self) -> Neighbors<<&'b mut Map as IntoOrder<'b, Q>>::IntoOrder, &'b Q, Dir> {
-        Neighbors { iter : (&mut self.map).into_order(self.q), v : self.q, direction : PhantomData }
+    fn edges_mut(self) -> <&'b mut Map as IntoOrder<'b, Q>>::IntoOrder {
+        (&mut self.map).into_order(self.q)
     }
 }
 

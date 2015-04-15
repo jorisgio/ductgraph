@@ -90,22 +90,22 @@ impl ToUsize for u8 {
 
 /// Result of an external comparaison
 #[derive(PartialEq, Eq)]
-pub enum ExtOrdering {
-    Equal,
+pub enum ExtOrdering<T> {
+    Equal(T),
     Less,
     Greater,
     Partial,
 }
 
 pub trait ExternalOrd<Q> {
-    fn ext_cmp(&self, to : &Q) -> ExtOrdering;
+    fn ext_cmp(&self, to : &Q) -> ExtOrdering<&Q>;
 }
 
 /// Convert a mapping into an iterator on a orderalence class of the key-value pairs.
 ///
 /// The iterator will only yield pairs such that the key is equal to the bound.
 pub trait IntoOrder<'a, Q> {
-    type Key : ExternalOrd<Q>;
+    type Key;
     type Value;
 
     type IntoOrder : Iterator;
@@ -309,14 +309,14 @@ impl<K, V, Q> FixedMap<Q> for HashMap<K, V> where K : Hash + Eq, Q : Eq + Hash, 
 
 /// HashMaps have no order. All the map has to be visited
 impl<'a, Q, K : ExternalOrd<Q>, V> Iterator for IterOrder<'a, Q, hash_map::Iter<'a, K, V>> {
-    type Item = (&'a K, &'a V);
+    type Item = (&'a Q, &'a V);
 
-    fn next(&mut self) -> Option<(&'a K, &'a V)> {
+    fn next(&mut self) -> Option<(&'a Q, &'a V)> {
         self.iter
             .next()
             .and_then(|(k, v)|
                 match  k.ext_cmp(&self.eq) { 
-                    ExtOrdering::Equal => Some((k, v)),
+                    ExtOrdering::Equal(q) => Some((q, v)),
                     _ => self.next(),
                 })
     }
@@ -324,14 +324,14 @@ impl<'a, Q, K : ExternalOrd<Q>, V> Iterator for IterOrder<'a, Q, hash_map::Iter<
 
 /// HashMaps have no order. All the map has to be visited
 impl<'a, Q, K : ExternalOrd<Q>, V> Iterator for IterOrder<'a, Q, hash_map::IterMut<'a, K, V>> {
-    type Item = (&'a K, &'a mut V);
+    type Item = (&'a Q, &'a mut V);
 
-    fn next(&mut self) -> Option<(&'a K, &'a mut V)> {
+    fn next(&mut self) -> Option<(&'a Q, &'a mut V)> {
         self.iter
             .next()
             .and_then(|(k, v)|
                 match  k.ext_cmp(&self.eq) { 
-                    ExtOrdering::Equal => Some((k, v)),
+                    ExtOrdering::Equal(q) => Some((q, v)),
                     _ => self.next(),
                 })
     }
@@ -339,7 +339,7 @@ impl<'a, Q, K : ExternalOrd<Q>, V> Iterator for IterOrder<'a, Q, hash_map::IterM
 
 /// The returned iterator is linear in the size of the Map
 impl<'a, K, V, Q> IntoOrder<'a, Q> for &'a HashMap<K, V> where K : ExternalOrd<Q>, K : Eq + Hash {
-    type Key = K;
+    type Key = Q;
     type Value = V;
 
     type IntoOrder = IterOrder<'a, Q, hash_map::Iter<'a, K, V>>;
@@ -354,7 +354,7 @@ impl<'a, K, V, Q> IntoOrder<'a, Q> for &'a HashMap<K, V> where K : ExternalOrd<Q
 
 /// The returned iterator is linear in the size of the Map
 impl<'a, K, V, Q> IntoOrder<'a, Q> for &'a mut HashMap<K, V> where K : ExternalOrd<Q>, K : Eq + Hash {
-    type Key = K;
+    type Key = Q;
     type Value = V;
 
     type IntoOrder = IterOrder<'a, Q, hash_map::IterMut<'a, K, V>>;
@@ -511,14 +511,14 @@ impl<'a, K,  V > MapEntry<'a> for BTreeMap<K, V> where K : Ord + Eq {
 
 /// Mostly linear in the size of the map. FIXME improve this once Range api is stabilized.
 impl<'a, Q,  K : ExternalOrd<Q>, V> Iterator for IterOrder<'a, Q, btree_map::Iter<'a, K, V>> {
-    type Item = (&'a K, &'a V);
+    type Item = (&'a Q, &'a V);
 
-    fn next(&mut self) -> Option<(&'a K, &'a V)> {
+    fn next(&mut self) -> Option<(&'a Q, &'a V)> {
         self.iter
             .next()
             .and_then(|(k, v)| 
                       match k.ext_cmp(&self.eq) {
-                          ExtOrdering::Equal => Some((k, v)),
+                          ExtOrdering::Equal(q) => Some((q, v)),
                           ExtOrdering::Greater => None,
                           _ => self.next(),
                       })
@@ -528,14 +528,14 @@ impl<'a, Q,  K : ExternalOrd<Q>, V> Iterator for IterOrder<'a, Q, btree_map::Ite
 
 /// HashMaps have no order. All the map has to be visited
 impl<'a, Q, K : ExternalOrd<Q>, V> Iterator for IterOrder<'a, Q, btree_map::IterMut<'a, K, V>> {
-    type Item = (&'a K, &'a mut V);
+    type Item = (&'a Q, &'a mut V);
 
-    fn next(&mut self) -> Option<(&'a K, &'a mut V)> {
+    fn next(&mut self) -> Option<(&'a Q, &'a mut V)> {
         self.iter
             .next()
             .and_then(|(k, v)|
                       match k.ext_cmp(&self.eq) {
-                          ExtOrdering::Equal => Some((k, v)),
+                          ExtOrdering::Equal(q) => Some((q, v)),
                           ExtOrdering::Greater => None,
                           _ => self.next(),
                       })
@@ -547,7 +547,7 @@ impl<'a, K, V, Q> IntoOrder<'a, Q> for &'a BTreeMap<K, V> where
 K : ExternalOrd<Q>,
 K : Eq + Ord,
 {
-    type Key = K;
+    type Key = Q;
     type Value = V;
 
     type IntoOrder = IterOrder<'a, Q, btree_map::Iter<'a, K, V>>;
@@ -565,7 +565,7 @@ impl<'a, K, V, Q> IntoOrder<'a, Q> for &'a mut BTreeMap<K, V> where
 K : ExternalOrd<Q>,
 K : Eq + Ord,
 {
-    type Key = K;
+    type Key = Q;
     type Value = V;
 
     type IntoOrder = IterOrder<'a, Q, btree_map::IterMut<'a, K, V>>;
@@ -694,28 +694,28 @@ pub mod vec_list {
     }
 
     impl<'a, Q, K : ExternalOrd<Q>, V> Iterator for IterOrder<'a, Q, Iter<'a, VecMapTuple<K, V>>> {
-        type Item = (&'a K, &'a V);
+        type Item = (&'a Q, &'a V);
 
-        fn next(&mut self) -> Option<(&'a K, &'a V)> {
+        fn next(&mut self) -> Option<(&'a Q, &'a V)> {
             self.iter
                 .next()
                 .and_then(|k| 
                           match  k.key.ext_cmp(&self.eq) { 
-                              ExtOrdering::Equal => Some((&k.key, &k.value)),
+                              ExtOrdering::Equal(q) => Some((q, &k.value)),
                               _ => self.next(),
                           })
         }
     }
 
     impl<'a, Q, K : ExternalOrd<Q>, V> Iterator for IterOrder<'a, Q, IterMut<'a, VecMapTuple<K, V>>> {
-        type Item = (&'a K, &'a mut V);
+        type Item = (&'a Q, &'a mut V);
 
-        fn next(&mut self) -> Option<(&'a K, &'a mut V)> {
+        fn next(&mut self) -> Option<(&'a Q, &'a mut V)> {
             self.iter
                 .next()
                 .and_then(|k| 
                           match  k.key.ext_cmp(&self.eq) { 
-                              ExtOrdering::Equal => Some((&k.key, &mut k.value)),
+                              ExtOrdering::Equal(q) => Some((q, &mut k.value)),
                               _ => self.next(),
                           })
         }
@@ -723,7 +723,7 @@ pub mod vec_list {
 
     /// The returned iterator is linear in the size of the Map
     impl<'a, K, V, Q> IntoOrder<'a, Q> for &'a VecListMap<K, V> where K : ExternalOrd<Q> + Eq {
-        type Key = K;
+        type Key = Q;
         type Value = V;
 
         type IntoOrder = IterOrder<'a, Q,Iter<'a, VecMapTuple<K, V>>>;
@@ -738,7 +738,7 @@ pub mod vec_list {
 
     /// The returned iterator is linear in the size of the Map
     impl<'a, K, V, Q> IntoOrder<'a, Q> for &'a mut VecListMap<K, V> where K : ExternalOrd<Q> + Eq {
-        type Key = K;
+        type Key = Q;
         type Value = V;
 
         type IntoOrder = IterOrder<'a, Q, IterMut<'a, VecMapTuple<K, V>>>;
