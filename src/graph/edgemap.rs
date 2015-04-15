@@ -819,8 +819,8 @@ pub use self::edgematrix::VecMatrix;
 pub mod edgematrix {
     //! A fixed sized array of edges used to implement Abstract graph with a fixed number of
     //! vertices.
-    use std::collections::VecMap;
     use std::marker::PhantomData;
+    use std::mem::replace;
 
     use super::{
         EdgeTuple,
@@ -832,6 +832,7 @@ pub mod edgematrix {
         FixedMap,
         FixedSizedMap,
         UnstableFixedSizedMap,
+        IntoOrder,
     };
 
 
@@ -839,10 +840,18 @@ pub mod edgematrix {
     ///
     /// The size of the Matrix is fixed and no new vertices can be added after creation. 
     pub struct VecMatrix<K, T, Dir : Direction> {
-        matrix : VecMap<T>,
+        matrix : Vec<Option<T>>,
         base : usize, // the number of vertices
         direction : PhantomData<(K, Dir)>,
     }
+
+    /*
+    pub struct Edges<D : Direction> {
+        base : usize,
+        pos : usize,
+    }
+    */
+
 
     impl<Label, Dir : Direction, K> MapOwned for VecMatrix<K, Label, Dir> where EdgeTuple<K, Dir> : Index + Eq {
         type Key = EdgeTuple<K, Dir>;
@@ -856,7 +865,7 @@ pub mod edgematrix {
 
         fn insert(&mut self, edge : EdgeTuple<K, Dir>, label : T) -> Option<T> {
             let index = edge.index(self.base).expect("Adjacency matrix : index out of range");
-            self.matrix.insert(index, label)
+            replace(unsafe { self.matrix.get_unchecked_mut(index) }, Some(label))
         }
     }
 
@@ -866,7 +875,7 @@ pub mod edgematrix {
                 fn get(&self, edge : &EdgeTuple<K, Dir>) -> Option<&Label> {
                     let index = edge.index(self.base);
                     if let Some(idx) = index {
-                        self.matrix.get(&idx)
+                        unsafe { self.matrix.get_unchecked(idx) }.as_ref()
                     } else {
                         None
                     }
@@ -875,7 +884,7 @@ pub mod edgematrix {
                 fn get_mut(&mut self, edge : &EdgeTuple<K, Dir>) -> Option<&mut Label> {
                     let index = edge.index(self.base);
                     if let Some(idx) = index {
-                        self.matrix.get_mut(&idx)
+                        unsafe { self.matrix.get_unchecked_mut(idx) }.as_mut()
                     } else {
                         None
                     }
@@ -884,7 +893,7 @@ pub mod edgematrix {
                 fn contains_key(&self, edge : &EdgeTuple<K, Dir>) -> bool {
                     let index = edge.index(self.base);
                     if let Some(idx) = index {
-                        self.matrix.contains_key(&idx)
+                        unsafe { self.matrix.get_unchecked(idx) }.is_some()
                     } else {
                         false
                     }
@@ -896,7 +905,7 @@ pub mod edgematrix {
         fn remove(&mut self, edge : &EdgeTuple<K, Dir>) -> Option<Label> {
             let index = edge.index(self.base);
             if let Some(idx) = index {
-                self.matrix.remove(&idx)
+                replace(unsafe { self.matrix.get_unchecked_mut(idx) }, None)
             } else {
                 None
             }

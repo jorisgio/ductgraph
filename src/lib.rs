@@ -1,4 +1,4 @@
-#![feature(alloc, collections)]
+#![feature(alloc)]
 
 pub mod interface;
 pub mod map;
