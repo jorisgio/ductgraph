@@ -1,5 +1,7 @@
 //! An iterator implementation on a generic graph data structure
 
+
+use std::ops::Deref;
 use std::default::Default;
 use std::collections::{
     VecDeque,
@@ -11,7 +13,7 @@ use ::interface::*;
 pub trait Visitor<Label> {
     type V : Clone;
 
-    fn delay<'a, I>(&mut self, v : &Self::V, i : I) where I : Iterator<Item = (&'a Self::V, &'a Label)> ;
+    fn delay<'a, I, Q : Deref<Target = Self::V>>(&mut self, v : &Self::V, i : I) where I : Iterator<Item = (Q, &'a Label)> ;
     fn visit(&mut self) -> Option<Self::V>;
 
     #[inline]
@@ -36,9 +38,9 @@ P : for<'s, 'r> FnMut(&'s Visit::V, &'s (&'r Visit::V, &'r Label)) -> bool,
     type V = Visit::V;
 
     #[inline]
-    fn delay<'a, I>(&mut self, v : &Visit::V, i : I) where I : Iterator<Item = (&'a Visit::V, &'a Label)> {
+    fn delay<'a, I, Q : Deref<Target = Visit::V>>(&mut self, v : &Visit::V, i : I) where I : Iterator<Item = (Q, &'a Label)> {
         let p = &mut self.pred;
-        let mut it = i.filter(|t| p(v, t));
+        let mut it = i.filter(|&(ref t, ref l)| p(v, &(&**t, *l)));
         self.visitor.delay(&v, &mut it)
     }
 
@@ -67,7 +69,7 @@ impl<V, M, Label> Visitor<Label> for Dfs<V, M> where
 {
     type V = V;
 
-    fn delay<'a, I>(&mut self, _ : &V, i : I ) where V : 'a, I : Iterator<Item = (&'a V, &'a Label)> {
+    fn delay<'a, I, Q : Deref<Target = V>>(&mut self, _ : &V, i : I ) where V : 'a, I : Iterator<Item = (Q, &'a Label)> {
         self.stack.extend(i.map(|(v, _)| v.clone()));
     }
 
@@ -101,7 +103,7 @@ impl<V, M, Label> Visitor<Label> for Bfs<V, M> where
 {
     type V = V;
 
-    fn delay<'a, I>(&mut self, _ : &V, i : I ) where V : 'a, I : Iterator<Item = (&'a V, &'a Label)> {
+    fn delay<'a, I, Q : Deref<Target = V>>(&mut self, _ : &V, i : I ) where V : 'a, I : Iterator<Item = (Q, &'a Label)> {
         self.queue.extend(i.map(|(v, _)| v.clone()));
     }
 

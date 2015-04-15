@@ -8,6 +8,8 @@ use std::cmp::{
     Eq,
     Ordering,
 };
+
+use std::ops::Deref;
 use std::iter::IntoIterator;
 use std::marker::PhantomData;
 use std::borrow::{
@@ -89,7 +91,7 @@ impl<T> Index for EdgeTuple<T, Directed> where T : ToUsize {
     fn index(&self, base : usize) -> Option<usize> {
         let (from, to) = (self.from.to_usize(), self.to.to_usize());
 
-        if from > base || to > base {
+        if from >= base || to >= base {
             None
         } else {
             Some(from * base + to)
@@ -101,10 +103,10 @@ impl<T> Index for EdgeTuple<T, Undirected> where T : ToUsize {
     fn index(&self, base : usize) -> Option<usize> {
         let (from, to) = (self.from.to_usize(), self.to.to_usize());
         let (max, min) = (cmp::max(from, to), cmp::min(from, to));
-        if max > base {
+        if max >= base {
             None
         } else {
-            Some(max * (max - 1) / 2 + min)
+            Some(max * (max + 1) / 2 + min)
         }
     }
 }
@@ -685,16 +687,17 @@ EdgeTuple<V, Dir> : IsConnected<Q> + Clone,
     }
 }
 
-impl<'b, 'a : 'b, V, A, S, Dir, Vert, Q, Map, Label> Edges<'b> 
+impl<'b, 'a : 'b, V, VRef : Deref<Target = V> + 'b, A, S, Dir, Vert, Q, Map, Label> Edges<'b> 
 for &'b MapGraphEntry<Vert, &'a Map, S, A, Dir, &'a Q>
 where
 &'b Map : IntoOrder<'b, Q, Key = V, Value =Label>,
-<&'b Map as IntoOrder<'b, Q>>::IntoOrder : Iterator<Item = (&'b V, &'b Label)>,
+<&'b Map as IntoOrder<'b, Q>>::IntoOrder : Iterator<Item = (VRef, &'b Label)>,
 Dir : Direction,
 V : Borrow<Q>,
 Q : Eq,
 {
     type V = V;
+    type VRef = VRef;
     type Label = Label;
     type Edges = <&'b Map as IntoOrder<'b, Q>>::IntoOrder;
 
@@ -703,17 +706,18 @@ Q : Eq,
     }
 }
 
-impl<'b, 'a : 'b, V, A, S, Dir, Vert, Q, Map, Label> EdgesMut<'b> 
+impl<'b, 'a : 'b, V, A, S, Dir, VRef : Deref<Target = V> + 'b, Vert, Q, Map, Label> EdgesMut<'b> 
 for &'b mut MapGraphEntry<Vert, &'a mut Map, S, A, Dir, &'a Q>
 where
 &'b mut Map : IntoOrder<'b, Q, Key = V, Value = Label>,
-<&'b mut Map as IntoOrder<'b, Q>>::IntoOrder : Iterator<Item = (&'b V, &'b mut Label)>,
+<&'b mut Map as IntoOrder<'b, Q>>::IntoOrder : Iterator<Item = (VRef, &'b mut Label)>,
 V : Borrow<Q>,
 Dir : Direction,
 Q : Eq,
 {
     type Label = Label;
     type V = V;
+    type VRef = VRef;
     type Edges = <&'b mut Map as IntoOrder<'b, Q>>::IntoOrder;
 
     fn edges_mut(self) -> <&'b mut Map as IntoOrder<'b, Q>>::IntoOrder {
@@ -826,13 +830,19 @@ pub mod edgematrix {
         EdgeTuple,
         Index,
     };
-    use ::interface::Direction;
+    use ::interface::{
+        Directed,
+        Undirected,
+        Direction,
+    };
     use ::map::{
         MapOwned,
         FixedMap,
         FixedSizedMap,
         UnstableFixedSizedMap,
         IntoOrder,
+        FromUsize,
+        ToUsize,
     };
 
 
@@ -845,13 +855,83 @@ pub mod edgematrix {
         direction : PhantomData<(K, Dir)>,
     }
 
-    /*
-    pub struct Edges<D : Direction> {
-        base : usize,
-        pos : usize,
+    impl<K, T> VecMatrix<K, T, Directed> {
+        /// Create a new matrix containing edges for `base` nodes
+        pub fn new(base : usize) -> VecMatrix<K, T, Directed> {
+            let size = base * base ;
+            let mut vec = Vec::with_capacity(size);
+            for _ in (0..size) {
+                vec.push(None);
+            }
+            VecMatrix {
+                matrix : vec,
+                base : base,
+                direction : PhantomData,
+            }
+        }
     }
-    */
 
+    impl<K, T> VecMatrix<K, T, Undirected> {
+        /// Create a new matrix containing edges for `base` nodes
+        pub fn new(base : usize) -> VecMatrix<K, T, Directed> {
+            let size = base * (base - 1) / 2;
+            let mut vec = Vec::with_capacity(size);
+            for _ in (0..size) {
+                vec.push(None);
+            }
+            VecMatrix {
+                matrix : vec,
+                base : base,
+                direction : PhantomData,
+            }
+        }
+    }
+
+    /// A iterator on the edges of a given vertex
+    pub struct UndirectedEdges<M> {
+        has_turned : u8,
+        pos : usize,
+        counter : usize,
+        matrix : M,
+
+    }
+
+    impl<'a, K : FromUsize, V> Iterator for UndirectedEdges<&'a VecMatrix<K, V, Undirected>> {
+        type Item = (K, &'a V);
+
+        fn next(&mut self) -> Option<(K, &'a V)> {
+            if self.counter >= self.matrix.base {
+                if self.has_turned == 0 { None } else { self.counter = 0; self.has_turned = 1; self.next() }
+            } else { 
+                let idx = self.pos;
+                self.pos += (self.counter * self.has_turned as usize) + 1;
+                self.counter += 1;
+                if let Some(v) = unsafe { self.matrix.matrix.get_unchecked(idx) }.as_ref() {
+                    Some((K::from_usize(self.counter - 1).unwrap(), v))
+                } else {
+                    self.next()
+                }
+            }
+        }
+    }
+
+    impl<'a, 'b, K : FromUsize + ToUsize, V> IntoOrder<'b, K> for &'a VecMatrix<K, V, Undirected> {
+        type Key = EdgeTuple<K, V>;
+        type Value = V;
+
+        type IntoOrder = UndirectedEdges<&'a VecMatrix<K, V, Undirected>>;
+
+        fn into_order(self, eq : &'b K) -> UndirectedEdges<&'a VecMatrix<K, V, Undirected>> {
+            // FIXME BUG ! Have to check the position is valid ?
+            let ieq = eq.to_usize();
+            UndirectedEdges {
+                has_turned : 0,
+                pos : ieq * (ieq + 1) / 2,
+                counter : 0,
+                matrix : self,
+            }
+        }
+    }
 
     impl<Label, Dir : Direction, K> MapOwned for VecMatrix<K, Label, Dir> where EdgeTuple<K, Dir> : Index + Eq {
         type Key = EdgeTuple<K, Dir>;

@@ -26,11 +26,12 @@ pub trait Edges<'a> {
     type Label;
     /// The type of vertex references
     type V;
+    type VRef : Deref<Target = Self::V> + 'a;
 
     /// The type of the iterator on the edges starting from the vertex
-    type Edges : Iterator<Item = (&'a Self::V, &'a Self::Label)>;
+    type Edges : Iterator<Item = (Self::VRef, &'a Self::Label)>;
 
-    /// Returns an iterator which yields a tuple `(&'a Self::V, &'a Self::Label)` for each edge
+    /// Returns an iterator which yields a tuple `(Self::VRef, &'a Self::Label)` for each edge
     /// starting from this vertex. The first element of the tuple is a reference to the destination
     /// vertex, and the second element of the tuple is a reference to the label of the edge.
     fn edges(self) -> Self::Edges;
@@ -43,11 +44,12 @@ pub trait EdgesMut<'a> {
     type Label;
     /// The type of vertex references
     type V;
+    type VRef : Deref<Target = Self::V> + 'a;
 
     /// The type of the iterator on the edges starting from the vertex
-    type Edges : Iterator<Item = (&'a Self::V, &'a mut Self::Label)>;
+    type Edges : Iterator<Item = (Self::VRef, &'a mut Self::Label)>;
 
-    /// Returns an iterator which yields a tuple `(&'a Self::V, &'a mut Self::Label)` for each edge
+    /// Returns an iterator which yields a tuple `(Self::VRef, &'a mut Self::Label)` for each edge
     /// starting from this vertex. The first element of the tuple is a reference to the destination
     /// vertex, and the second element of the tuple is a mutable reference to  the label of the edge.
     fn edges_mut(self) -> Self::Edges;

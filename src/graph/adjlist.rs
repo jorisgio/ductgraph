@@ -232,13 +232,14 @@ impl<'a, I, Label, V> Iterator for NeighborsMut<I, Directed> where I : Iterator<
     }
 }
 
-impl<'b, 'a : 'b, Label : 'b,  MapTo, V, VLabel, Dir, A> Edges<'b>
+impl<'b, 'a : 'b, Label : 'b,  MapTo, V : 'b, VLabel, Dir, A> Edges<'b>
 for &'b Option<&'a AdjVertex<VLabel,MapTo, A, Dir>> where
 &'b MapTo : IntoIterator,
 Neighbors<<&'b MapTo as IntoIterator>::IntoIter, Dir> : Iterator<Item = (&'b V, &'b Label)>,
 {
     type Label = Label;
     type V = V;
+    type VRef = &'b V;
     type Edges = Neighbors<<&'b MapTo as IntoIterator>::IntoIter, Dir>;
 
     fn edges(self) -> Neighbors<<&'b MapTo as IntoIterator>::IntoIter, Dir> {
@@ -249,7 +250,7 @@ Neighbors<<&'b MapTo as IntoIterator>::IntoIter, Dir> : Iterator<Item = (&'b V, 
     }
 }
 
-impl<'b, 'a : 'b, Label : 'b, MapTo, V, VLabel, Dir, A> EdgesMut<'b>
+impl<'b, 'a : 'b, Label : 'b, MapTo, V : 'b, VLabel, Dir, A> EdgesMut<'b>
 for &'b mut Option<&'a mut AdjVertex<VLabel,MapTo, A, Dir>> where
 &'b mut MapTo : IntoIterator,
 NeighborsMut<<&'b mut MapTo as IntoIterator>::IntoIter, Dir> : Iterator<Item = (&'b V, &'b mut Label)>,
@@ -257,6 +258,7 @@ NeighborsMut<<&'b mut MapTo as IntoIterator>::IntoIter, Dir> : Iterator<Item = (
 
     type Label = Label;
     type V = V;
+    type VRef = &'b V;
     type Edges = NeighborsMut<<&'b mut MapTo as IntoIterator>::IntoIter, Dir>;
 
     fn edges_mut(self) -> NeighborsMut<<&'b mut MapTo as IntoIterator>::IntoIter, Dir> {
