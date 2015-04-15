@@ -761,7 +761,7 @@ MapTo : Default,
                 label  : label,
                 is_abstract : PhantomData,
             };
-            Ok((self.map.append(newentry), None))
+            self.map.append(newentry).map(|k| (k, None)).map_err(|e| e.label)
     }
 }
 

@@ -15,7 +15,80 @@ pub use std::collections::{
     BTreeMap,
 };
 
+/// A conversion trait to usize
+pub trait ToUsize {
+    fn to_usize(&self) -> usize;
+}
 
+pub trait FromUsize {
+    fn from_usize(u : usize) -> Option<Self>;
+}
+
+
+impl FromUsize for usize {
+    #[inline]
+    fn from_usize(u : usize) -> Option<usize> {
+        Some(u)
+    }
+}
+
+impl FromUsize for u32 {
+    #[inline]
+    fn from_usize(u : usize) -> Option<u32> {
+        use std::u32::MAX;
+        if u > (MAX as usize) {
+            None
+        } else {
+            Some(u as u32)
+        }
+    }
+}
+
+impl FromUsize for u16 {
+    #[inline]
+    fn from_usize(u : usize) -> Option<u16> {
+        use std::u16::MAX;
+        if u > (MAX as usize) {
+            None
+        } else {
+            Some(u as u16)
+        }
+    }
+}
+
+impl FromUsize for u8 {
+    #[inline]
+    fn from_usize(u : usize) -> Option<u8> {
+        use std::u8::MAX;
+        if u > (MAX as usize) {
+            None
+        } else {
+            Some(u as u8)
+        }
+    }
+}
+
+impl ToUsize for usize {
+    #[inline]
+    fn to_usize(&self) -> usize { *self }
+}
+
+impl ToUsize for u32 {
+    #[inline]
+    fn to_usize(&self) -> usize { *self as usize }
+}
+
+impl ToUsize for u16 {
+    #[inline]
+    fn to_usize(&self) -> usize { *self as usize }
+}
+
+impl ToUsize for u8 {
+    #[inline]
+    fn to_usize(&self) -> usize { *self as usize }
+}
+
+/// Result of an external comparaison
 #[derive(PartialEq, Eq)]
 pub enum ExtOrdering {
     Equal,
@@ -49,13 +122,13 @@ pub struct IterOrder<'a, Q : 'a, I> {
 
 /// Any mapping from elements of type `Key` to elements of type `Value`
 pub trait MapOwned {
-    type Key : Eq;
+    type Key;
     type Value; 
 }
 
 /// A mapping from Keys to Values with lookup functionnality for any type `Q` orderalent to the Key
 /// type
-pub trait FixedMap<Q> : MapOwned where Self::Key : Borrow<Q> {
+pub trait FixedMap<Q> : MapOwned {
 
     /// Returns a reference to the value corresponding to the key.
     /// The key may be any borrowed form of the map's key type, as long as the borrowed form
@@ -100,7 +173,7 @@ impl<Q, T> StableMap<Q> for T where T : GrowableMap + FixedMap<Q> {}
 pub trait InternalMap : MapOwned {
     /// Appends a new value to the map which will be associated with the next avaible key,
     /// and returns the key.
-    fn append(&mut self, value : Self::Value) -> Self::Key;
+    fn append(&mut self, value : Self::Value) -> Result<Self::Key, Self::Value>;
     /// Returns `true` if the map contains no key-value pair.
     fn is_empty(&self) -> bool;
 }
@@ -684,49 +757,68 @@ pub mod stable_vec_map {
     //! A stable Map from unsigned integer keys to any value implemented as a vector.
     //! Search is in constant time
 
+    use std::marker::PhantomData;
+    use std::default::Default;
 
     use super::{
         MapOwned,
         FixedMap,
         InternalMap,
+        ToUsize,
+        FromUsize,
     };
 
     /// A stable map from unsigned integer keys to any value implemented as a vector
-    pub struct StableVecMap<Value> {
+    pub struct StableVecMap<Key : ToUsize, Value> {
         vec : Vec<Value>,
+        keys : PhantomData<Key>,
     }
 
-    impl<Value> MapOwned for StableVecMap<Value> {
-        type Key = usize;
+    impl<Key : ToUsize, Value> Default for StableVecMap<Key, Value> {
+        fn default() -> StableVecMap<Key, Value> {
+            StableVecMap {
+                vec : Vec::default(),
+                keys : PhantomData,
+            }
+        }
+    }
+
+    impl<K : ToUsize + FromUsize, Value> MapOwned for StableVecMap<K, Value> {
+        type Key = K;
         type Value = Value;
     }
 
-    impl<Value> InternalMap for StableVecMap<Value> {
+    impl<K : ToUsize + FromUsize, Value> InternalMap for StableVecMap<K, Value> {
         #[inline]
         fn is_empty(&self) -> bool {
             self.vec.is_empty()
         }
 
-        fn append(&mut self, v : Value) -> usize {
-            self.vec.push(v);
-            self.vec.len() - 1
+        fn append(&mut self, v : Value) -> Result<K, Value> {
+            let new = K::from_usize(self.vec.len() - 1);
+            if let Some(k) = new {
+                self.vec.push(v);
+                Ok(k)
+            } else {
+                Err(v)
+            }
         }
     }
 
-    impl<Value> FixedMap<usize> for StableVecMap<Value> {
+    impl<K : ToUsize + FromUsize, Value> FixedMap<K> for StableVecMap<K, Value> {
         #[inline]
-        fn get(&self, key : &usize) -> Option<&Value> {
-            self.vec.get(*key)
+        fn get(&self, key : &K) -> Option<&Value> {
+            self.vec.get(key.to_usize())
         }
 
         #[inline]
-        fn get_mut(&mut self, key : &usize) -> Option<&mut Value> {
-            self.vec.get_mut(*key)
+        fn get_mut(&mut self, key : &K) -> Option<&mut Value> {
+            self.vec.get_mut(key.to_usize())
         }
 
         #[inline]
-        fn contains_key(&self, key : &usize) -> bool {
-            *key < self.vec.len()
+        fn contains_key(&self, key : &K) -> bool {
+            key.to_usize() < self.vec.len()
         }
     }
 }

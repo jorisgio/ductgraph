@@ -17,6 +17,7 @@ use std::borrow::{
 
 use ::map::{
     self,
+    ToUsize,
     Map,
     FixedSizedMap,
     FixedMap,
@@ -54,10 +55,6 @@ trait IsConnected<To> {
     fn connected(&self, to : &To) -> bool;
 }
 
-/// A conversion trait to usize
-pub trait ToUsize {
-    fn to_usize(&self) -> usize;
-}
 
 impl<V : Ord> ExternalOrd<V> for EdgeTuple<V, Directed> {
     #[inline]
@@ -792,7 +789,7 @@ VMap : map::InternalStableMap<V, Value = Label, Key = V>,
     type Label = Label;
 
     fn create(self, label : Label) -> Result<(V, Option<Label>), Label> {
-        Ok((self.vmap.append(label), None))
+        self.vmap.append(label).map(|v| (v, None))
     }
 }
         
