@@ -824,7 +824,15 @@ pub mod edgematrix {
     //! A fixed sized array of edges used to implement Abstract graph with a fixed number of
     //! vertices.
     use std::marker::PhantomData;
-    use std::mem::replace;
+    use std::mem::{
+        replace,
+        transmute
+    };
+    use std::iter::Enumerate;
+    use std::slice::{
+        Iter,
+        IterMut,
+    };
 
     use super::{
         EdgeTuple,
@@ -916,20 +924,105 @@ pub mod edgematrix {
     }
 
     impl<'a, 'b, K : FromUsize + ToUsize, V> IntoOrder<'b, K> for &'a VecMatrix<K, V, Undirected> {
-        type Key = EdgeTuple<K, V>;
+        type Key = K;
         type Value = V;
 
         type IntoOrder = UndirectedEdges<&'a VecMatrix<K, V, Undirected>>;
 
         fn into_order(self, eq : &'b K) -> UndirectedEdges<&'a VecMatrix<K, V, Undirected>> {
-            // FIXME BUG ! Have to check the position is valid ?
             let ieq = eq.to_usize();
+            let counter = if ieq >= self.base { self.base } else { 0 };
             UndirectedEdges {
                 has_turned : 0,
                 pos : ieq * (ieq + 1) / 2,
-                counter : 0,
+                counter : counter,
                 matrix : self,
             }
+        }
+    }
+
+    impl<'a, K : FromUsize, V> Iterator for UndirectedEdges<&'a mut VecMatrix<K, V, Undirected>> {
+        type Item = (K, &'a mut V);
+
+        fn next(&mut self) -> Option<(K, &'a mut V)> {
+            if self.counter >= self.matrix.base {
+                if self.has_turned == 0 { None } else { self.counter = 0; self.has_turned = 1; self.next() }
+            } else { 
+                let idx = self.pos;
+                self.pos += (self.counter * self.has_turned as usize) + 1;
+                self.counter += 1;
+                if let Some(v) = unsafe { transmute::<_, &'a mut Option<V>>(self.matrix.matrix.get_unchecked_mut(idx)) }.as_mut() {
+                    Some((K::from_usize(self.counter - 1).unwrap(), v))
+                } else {
+                    self.next()
+                }
+            }
+        }
+    }
+
+    impl<'a, 'b, K : FromUsize + ToUsize, V> IntoOrder<'b, K> for &'a mut VecMatrix<K, V, Undirected> {
+        type Key = K;
+        type Value = V;
+
+        type IntoOrder = UndirectedEdges<&'a mut VecMatrix<K, V, Undirected>>;
+
+        fn into_order(self, eq : &'b K) -> UndirectedEdges<&'a mut VecMatrix<K, V, Undirected>> {
+            let ieq = eq.to_usize();
+            let counter = if ieq >= self.base { self.base } else { 0 };
+            UndirectedEdges {
+                has_turned : 0,
+                pos : ieq * (ieq + 1) / 2,
+                counter : counter,
+                matrix : self,
+            }
+        }
+    }
+
+
+    pub struct DirectedEdges<I, K> {
+        iter : Enumerate<I>,
+        marker : PhantomData<K>,
+    }
+
+    impl<'a, K : FromUsize, V> Iterator for DirectedEdges<IterMut<'a, Option<V>>, K> {
+        type Item = (K, &'a mut V);
+
+        fn next(&mut self) -> Option<(K, &'a mut V)> {
+            self.iter.next().and_then(|(k, v)| v.as_mut().map(|val| (K::from_usize(k).unwrap(), val)))
+        }
+    }
+
+    impl<'a, K : FromUsize, V> Iterator for DirectedEdges<Iter<'a, Option<V>>, K>  {
+        type Item = (K, &'a V);
+
+        fn next(&mut self) -> Option<(K, &'a V)> {
+            self.iter.next().and_then(|(k, v)| v.as_ref().map(|val| (K::from_usize(k).unwrap(), val)))
+        }
+    }
+
+    impl<'a, 'b, K : FromUsize + ToUsize, V> IntoOrder<'b, K> for &'a mut VecMatrix<K, V, Directed> {
+        type Key = K;
+        type Value = V;
+
+        type IntoOrder = DirectedEdges<IterMut<'a, Option<V>>, K>;
+
+        fn into_order(self, eq : &'b K) -> DirectedEdges<IterMut<'a, Option<V>>, K> {
+            let ieq = eq.to_usize();
+            let mut slice = &mut self.matrix[ieq..(ieq + self.base)];
+            DirectedEdges { iter : slice.iter_mut().enumerate(), marker : PhantomData }
+        }
+    }
+
+    impl<'a, 'b, K : FromUsize + ToUsize, V> IntoOrder<'b, K> for &'a VecMatrix<K, V, Directed> {
+        type Key = K;
+        type Value = V;
+
+        type IntoOrder = DirectedEdges<Iter<'a, Option<V>>, K>;
+
+        fn into_order(self, eq : &'b K) -> DirectedEdges<Iter<'a, Option<V>>, K> {
+            let ieq = eq.to_usize();
+            let slice = &self.matrix[ieq..(ieq + self.base)];
+            DirectedEdges { iter : slice.iter().enumerate(), marker : PhantomData }
         }
     }
 
