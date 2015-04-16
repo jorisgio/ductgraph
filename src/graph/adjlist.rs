@@ -30,6 +30,7 @@ use ::uuid::{
 use super::{
     Stable,
     Unstable,
+    UnstableMarker,
     RefCounted,
     Abstract,
     Concrete
@@ -642,11 +643,15 @@ Q1 : ToOwned<Owned = V>,
     fn unlink(self, to : &'b Q2) -> Option<Label> {
         let (from, graph) = (self.vertex, self.graph);
         graph.map
-            .entry(to.to_owned())
-            .occupied()
-            .ok()
-            .map(|mut occ| if occ.get().rmap.decr() { occ.remove(); })
-            .and_then(|_| graph.map.get_mut(from).and_then(|mut v| v.map.remove(to)))
+            .get_mut(from).and_then(|mut v| v.map.remove(to))
+            .map(|l| {
+                graph.map
+                    .entry(to.to_owned())
+                    .occupied()
+                    .ok()
+                    .map(|mut occ| if occ.get().rmap.decr() { occ.remove(); });
+                l
+            })
     }
 }
 
@@ -730,6 +735,17 @@ for &'b mut Option<&'a mut AdjVertex<Label, MapTo, R, Abstract, Dir>> {
 
 impl<MapFrom, U, Q, Dir> ConcreteGraphLike< Q>
 for AdjGraph<U, MapFrom, Unstable, Abstract, Dir>
+where 
+MapFrom : FixedMap<Q>,
+{
+    #[inline]
+    fn contains(&self, v : &Q) -> bool {
+        self.map.contains_key(v)
+    }
+}
+
+impl<MapFrom, U, Q, Dir> ConcreteGraphLike< Q>
+for AdjGraph<U, MapFrom, RefCounted, Abstract, Dir>
 where 
 MapFrom : FixedMap<Q>,
 {
@@ -859,9 +875,10 @@ V : Clone,
     }
 }
 
-impl<'a, MapFrom, Label, MapTo, V, Dir, U, RMap,> StableInternalAbstractGraph 
-for AdjGraph<Factory<U>, MapFrom, Unstable, Abstract, Dir>
+impl<'a, MapFrom, Label, MapTo, V, Dir, U, RMap, S> StableInternalAbstractGraph 
+for AdjGraph<Factory<U>, MapFrom, S, Abstract, Dir>
 where
+S : UnstableMarker,
 MapFrom : map::StableMap<V, Key = V, Value = AdjVertex<Label, MapTo, RMap, Abstract, Dir>>,
 MapTo : Default,
 RMap : Default,

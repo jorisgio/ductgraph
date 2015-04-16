@@ -9,7 +9,7 @@ pub mod vertices;
 mod adjlist {
     mod abstr {
         mod directed {
-            mod edges {
+            mod stable {
                 use ::ductgraph::map::{
                     HashMap,
                     BTreeMap,
@@ -61,53 +61,125 @@ mod adjlist {
                         (graph, 0 , 1, 2)
                     }
                 }
+            }
 
-                pub mod unstable {
-                    use ::ductgraph::map::{
-                        HashMap,
-                        BTreeMap,
-                    };
-                    use ::ductgraph::graph::*;
-                    use ::ductgraph::graph::adjlist::{
-                        AdjGraph,
-                        AdjVertex,
-                    };
-                    use ::ductgraph::uuid::{
-                        Factory,
-                    };
-                    use ::ductgraph::interface::*;
+            pub mod unstable {
+                use ::ductgraph::map::{
+                    HashMap,
+                    BTreeMap,
+                };
+                use ::ductgraph::graph::*;
+                use ::ductgraph::graph::adjlist::{
+                    AdjGraph,
+                    AdjVertex,
+                };
+                use ::ductgraph::uuid::{
+                    Factory,
+                };
 
-                    adjgraph_type!(MyUnstableGraph, Abstract, Directed, Unstable, Factory<usize>, usize, HashMap, BTreeMap);
+                adjgraph_type!(MyGraph, Abstract, Directed, Unstable, Factory<usize>, usize, HashMap, BTreeMap);
 
-                    generic_vertices_tests! {
-                        {
-                            let mut graph : MyUnstableGraph<&'static str, &'static str> = AdjGraph::new();
-                            assert_eq!(graph.create("hey"), Ok((0, None)));
-                            assert_eq!(graph.create("hey"), Ok((1, None)));
-                            (graph, 0 , 1, 2)
-                        }
-                    }
-
-                    create_vertex_tests! {
-                        {
-                            let mut graph : MyUnstableGraph<&'static str, &'static str> = AdjGraph::new();
-                            assert_eq!(graph.create("hey"), Ok((0, None)));
-                            assert_eq!(graph.create("hey"), Ok((1, None)));
-                            (graph, 0 , 1, 2)
-                        }
-                    }
-
-                    unstable_vertices_tests! {
-                        {
-                            let mut graph : MyUnstableGraph<&'static str, &'static str> = AdjGraph::new();
-                            assert_eq!(graph.create("hey"), Ok((0, None)));
-                            assert_eq!(graph.create("hey"), Ok((1, None)));
-                            (graph, 0 , 1, 2)
-                        }
+                directed_edges_tests! {
+                    {
+                        let mut graph : MyGraph<u32, u32> = AdjGraph::new();
+                        assert_eq!(graph.create(1), Ok((0, None)));
+                        assert_eq!(graph.create(2), Ok((1, None)));
+                        (graph, 0 , 1)
                     }
                 }
 
+
+                generic_vertices_tests! {
+                    {
+                        let mut graph : MyGraph<&'static str, &'static str> = AdjGraph::new();
+                        assert_eq!(graph.create("hey"), Ok((0, None)));
+                        assert_eq!(graph.create("hey"), Ok((1, None)));
+                        (graph, 0 , 1, 2)
+                    }
+                }
+
+                create_vertex_tests! {
+                    {
+                        let mut graph : MyGraph<&'static str, &'static str> = AdjGraph::new();
+                        assert_eq!(graph.create("hey"), Ok((0, None)));
+                        assert_eq!(graph.create("hey"), Ok((1, None)));
+                        (graph, 0 , 1, 2)
+                    }
+                }
+
+                unstable_vertices_tests! {
+                    {
+                        let mut graph : MyGraph<&'static str, &'static str> = AdjGraph::new();
+                        assert_eq!(graph.create("hey"), Ok((0, None)));
+                        assert_eq!(graph.create("hey"), Ok((1, None)));
+                        (graph, 0 , 1, 2)
+                    }
+                }
+
+                nonrefcounted_vertices_tests! {
+                    {
+                        let mut graph : MyGraph<&'static str, &'static str> = AdjGraph::new();
+                        assert_eq!(graph.create("hey"), Ok((0, None)));
+                        assert_eq!(graph.create("hey"), Ok((1, None)));
+                        (graph, 0 , 1, 2)
+                    }
+                }
             }
+            pub mod refcounted {
+                use ::ductgraph::map::{
+                    HashMap,
+                    BTreeMap,
+                };
+                use ::ductgraph::graph::*;
+                use ::ductgraph::graph::adjlist::{
+                    AdjGraph,
+                    AdjVertex,
+                    RefCount,
+                };
+                use ::ductgraph::uuid::{
+                    Factory,
+                };
+
+                adjgraph_type!(MyGraph, Abstract, Directed, RefCounted, Factory<usize>, usize, HashMap, BTreeMap);
+
+                directed_edges_tests! {
+                    {
+                        let mut graph : MyGraph<u32, u32> = AdjGraph::new();
+                        assert_eq!(graph.create(1), Ok((0, None)));
+                        assert_eq!(graph.create(2), Ok((1, None)));
+                        (graph, 0 , 1)
+                    }
+                }
+
+
+                generic_vertices_tests! {
+                    {
+                        let mut graph : MyGraph<&'static str, &'static str> = AdjGraph::new();
+                        assert_eq!(graph.create("hey"), Ok((0, None)));
+                        assert_eq!(graph.create("hey"), Ok((1, None)));
+                        (graph, 0 , 1, 2)
+                    }
+                }
+
+                create_vertex_tests! {
+                    {
+                        let mut graph : MyGraph<&'static str, &'static str> = AdjGraph::new();
+                        assert_eq!(graph.create("hey"), Ok((0, None)));
+                        assert_eq!(graph.create("hey"), Ok((1, None)));
+                        (graph, 0 , 1, 2)
+                    }
+                }
+
+                unstable_vertices_tests! {
+                    {
+                        let mut graph : MyGraph<&'static str, &'static str> = AdjGraph::new();
+                        assert_eq!(graph.create("hey"), Ok((0, None)));
+                        assert_eq!(graph.create("hey"), Ok((1, None)));
+                        (graph, 0 , 1, 2)
+                    }
+                }
+            }
+
         }
         mod undirected {
             mod edges {
@@ -145,70 +217,70 @@ mod adjlist {
                 }
             }
         }
-    }
-    mod concrete {
-        mod directed {
-            mod edges {
-                use ::ductgraph::map::{
-                    HashMap,
-                    BTreeMap,
-                };
-                use ::ductgraph::graph::*;
-                use ::ductgraph::graph::adjlist::{
-                    AdjGraph,
-                    AdjVertex,
-                };
-                use ::ductgraph::uuid::{
-                    UnitFactory,
-                };
-                adjgraph_type!(MyGraph, Concrete, Directed, usize, HashMap, BTreeMap);
+        mod concrete {
+            mod directed {
+                mod edges {
+                    use ::ductgraph::map::{
+                        HashMap,
+                        BTreeMap,
+                    };
+                    use ::ductgraph::graph::*;
+                    use ::ductgraph::graph::adjlist::{
+                        AdjGraph,
+                        AdjVertex,
+                    };
+                    use ::ductgraph::uuid::{
+                        UnitFactory,
+                    };
+                    adjgraph_type!(MyGraph, Concrete, Directed, usize, HashMap, BTreeMap);
 
-                directed_edges_tests! {
-                    {
-                        let graph : MyGraph<u32> = AdjGraph::new();
-                        (graph, 0 , 1)
+                    directed_edges_tests! {
+                        {
+                            let graph : MyGraph<u32> = AdjGraph::new();
+                            (graph, 0 , 1)
+                        }
                     }
-                }
-                directed_neighbors_tests! {
-                    {
-                        let graph : MyGraph<u32> = AdjGraph::new();
-                        (graph, 0, 1, 2, 3)
-                    }
-                }
-            }
-        }
-        mod undirected {
-            mod edges {
-                use ::ductgraph::map::{
-                    HashMap,
-                    BTreeMap,
-                };
-                use ::ductgraph::graph::*;
-                use ::ductgraph::graph::adjlist::{
-                    AdjGraph,
-                    AdjVertex,
-                };
-                use ::ductgraph::uuid::{
-                    UnitFactory,
-                };
-
-                adjgraph_type!(MyGraph, Concrete, Undirected, usize, HashMap, BTreeMap);
-
-                undirected_edges_tests! {
-                    {
-                        let graph : MyGraph<u32> = AdjGraph::new();
-                        (graph, 0 , 1)
-                    }
-                }
-                directed_neighbors_tests! {
-                    {
-                        let graph : MyGraph<u32> = AdjGraph::new();
-                        (graph, 0, 1, 2, 3)
+                    directed_neighbors_tests! {
+                        {
+                            let graph : MyGraph<u32> = AdjGraph::new();
+                            (graph, 0, 1, 2, 3)
+                        }
                     }
                 }
             }
-        }
+            mod undirected {
+                mod edges {
+                    use ::ductgraph::map::{
+                        HashMap,
+                        BTreeMap,
+                    };
+                    use ::ductgraph::graph::*;
+                    use ::ductgraph::graph::adjlist::{
+                        AdjGraph,
+                        AdjVertex,
+                    };
+                    use ::ductgraph::uuid::{
+                        UnitFactory,
+                    };
 
+                    adjgraph_type!(MyGraph, Concrete, Undirected, usize, HashMap, BTreeMap);
+
+                    undirected_edges_tests! {
+                        {
+                            let graph : MyGraph<u32> = AdjGraph::new();
+                            (graph, 0 , 1)
+                        }
+                    }
+                    directed_neighbors_tests! {
+                        {
+                            let graph : MyGraph<u32> = AdjGraph::new();
+                            (graph, 0, 1, 2, 3)
+                        }
+                    }
+                }
+            }
+
+        }
     }
 }
 

@@ -3,6 +3,12 @@
 #[macro_use] pub mod adjlist;
 //pub mod rcnodes;
 
+
+pub trait UnstableMarker {}
+
+impl UnstableMarker for Unstable {}
+impl UnstableMarker for RefCounted {}
+
 /// A marker for stable graphs
 ///
 /// A stable graph is a kind of abstract graph allowing insertion of new vertices but not deletion
