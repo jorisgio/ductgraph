@@ -12,6 +12,7 @@ use ::map::{
     MapOwned,
     FixedMap,
     StableMap,
+    GrowableMap,
     MapEntry,
     Entry,
     Vacant,
@@ -29,31 +30,77 @@ use ::uuid::{
 use super::{
     Stable,
     Unstable,
+    RefCounted,
     Abstract,
     Concrete
 };
 
-/// G
+/// A refcounting for reverse edges count
+pub struct RefCount {
+    deleted : bool,
+    refcount : usize,
+}
+
+impl RefCount {
+    #[inline]
+    fn incr(&mut self) {
+        self.refcount +=1;
+    }
+
+    #[inline]
+    fn decr(&mut self) -> bool {
+        self.refcount -= 1;
+        self.refcount == 0 && self.deleted
+    }
+
+    #[inline]
+    fn delete(&mut self) -> bool {
+        self.deleted = true;
+        self.refcount == 0
+    }
+}
+
+impl Default for RefCount {
+
+    #[inline]
+    fn default() -> RefCount {
+        RefCount {
+            deleted : false,
+            refcount : 0,
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! adjgraph_type{
     ($name:ident, Concrete, Directed, $vertex:ident, $map:ident, $adjlist:ident) =>
         (type $name<Label> =
-         AdjGraph<UnitFactory, $map<$vertex, AdjVertex<(), $adjlist<$vertex, Label>, Concrete, Directed>>, Unstable, Concrete, Directed>;
+         AdjGraph<UnitFactory, $map<$vertex, AdjVertex<(), $adjlist<$vertex, Label>, (), Concrete, Directed>>, Unstable, Concrete, Directed>;
         );
 
     ($name:ident, Concrete, Undirected, $vertex:ident, $map:ident, $adjlist:ident) =>
         (type $name<Label> =
-         AdjGraph<UnitFactory, $map<$vertex, AdjVertex<(), $adjlist<$vertex, *mut Label>, Concrete, Undirected>>, Unstable, Concrete, Undirected>;
+         AdjGraph<UnitFactory, $map<$vertex, AdjVertex<(), $adjlist<$vertex, *mut Label>, (), Concrete, Undirected>>, Unstable, Concrete, Undirected>;
         );
 
-    ($name:ident, Abstract, Directed, $stable:ident, $uuid:ty, $vertex:ident, $map:ident, $adjlist:ident) =>
+    ($name:ident, Abstract, Directed, Stable, $uuid:ty, $vertex:ident, $map:ident, $adjlist:ident) =>
         (type $name<Label, ELabel> =
-         AdjGraph<$uuid, $map<$vertex, AdjVertex<Label, $adjlist<$vertex, ELabel>, Abstract, Directed>>, $stable, Abstract, Directed>;
+         AdjGraph<$uuid, $map<$vertex, AdjVertex<Label, $adjlist<$vertex, ELabel>, (), Abstract, Directed>>, Stable, Abstract, Directed>;
+         );
+
+    ($name:ident, Abstract, Directed, Unstable, $uuid:ty, $vertex:ident, $map:ident, $adjlist:ident) =>
+        (type $name<Label, ELabel> =
+         AdjGraph<$uuid, $map<$vertex, AdjVertex<Label, $adjlist<$vertex, ELabel>, $adjlist<$vertex, ()>, Abstract, Directed>>, Unstable, Abstract, Directed>;
+         );
+
+    ($name:ident, Abstract, Directed, RefCounted, $uuid:ty, $vertex:ident, $map:ident, $adjlist:ident) =>
+        (type $name<Label, ELabel> =
+         AdjGraph<$uuid, $map<$vertex, AdjVertex<Label, $adjlist<$vertex, ELabel>, RefCount, Abstract, Directed>>, RefCounted, Abstract, Directed>;
          );
 
     ($name:ident, Abstract, Undirected, $stable:ident, $uuid:ty, $vertex:ident, $map:ident, $adjlist:ident) =>
         (type $name<Label, ELabel> =
-         AdjGraph<$uuid, $map<$vertex, AdjVertex<Label, $adjlist<$vertex, *mut ELabel>, Abstract, Undirected>>, $stable, Abstract, Undirected>;
+         AdjGraph<$uuid, $map<$vertex, AdjVertex<Label, $adjlist<$vertex, *mut ELabel>, (), Abstract, Undirected>>, $stable, Abstract, Undirected>;
         );
     }
 
@@ -86,8 +133,8 @@ impl<U, M : Default, S, A, D> AdjGraph<U, M, S, A, D> {
 
 
 
-impl<Label, VLabel, V, M, N, S, A, D, U> Graph for AdjGraph<U, M, S, A, D> where
-M : map::MapOwned<Key = V, Value =  AdjVertex<VLabel, N, A, D>>,
+impl<Label, VLabel, V, M, N, R, S, A, D, U> Graph for AdjGraph<U, M, S, A, D> where
+M : map::MapOwned<Key = V, Value =  AdjVertex<VLabel, N, R, A, D>>,
 N : map::MapOwned<Key = V, Value = Label>,
 {
     type Label = VLabel;
@@ -96,28 +143,28 @@ N : map::MapOwned<Key = V, Value = Label>,
 }
 
 
-impl<'a, U, MapFrom, MapTo, V, Q, VLabel, S, A, Dir> GraphLike<'a, Q>
+impl<'a, U, MapFrom, MapTo, V, Q, VLabel, S, A, Dir, R> GraphLike<'a, Q>
 for AdjGraph<U, MapFrom, S, A, Dir>
 where 
-MapFrom : map::FixedMap<Q, Key = V, Value = AdjVertex<VLabel, MapTo, A, Dir>>,
+MapFrom : map::FixedMap<Q, Key = V, Value = AdjVertex<VLabel, MapTo, R, A, Dir>>,
 V : Borrow<Q>,
 {
-    type Vertex = Option<&'a AdjVertex<VLabel, MapTo, A, Dir>>;
+    type Vertex = Option<&'a AdjVertex<VLabel, MapTo, R, A, Dir>>;
 
-    fn vertex(&'a self, from : &'a Q) -> Option<&'a AdjVertex<VLabel, MapTo, A, Dir>> {
+    fn vertex(&'a self, from : &'a Q) -> Option<&'a AdjVertex<VLabel, MapTo, R, A, Dir>> {
         self.map.get(from)
     }
 }
 
-impl<'a, U, MapFrom, MapTo, Q, V, VLabel, S, A, Dir> GraphLikeMut<'a, Q>
+impl<'a, U, MapFrom, MapTo, Q, V, VLabel, S, A, Dir, R> GraphLikeMut<'a, Q>
 for  AdjGraph<U, MapFrom, S, A, Dir>
 where 
-MapFrom : map::FixedMap<Q, Key = V, Value = AdjVertex<VLabel, MapTo, A, Dir>>,
+MapFrom : map::FixedMap<Q, Key = V, Value = AdjVertex<VLabel, MapTo, R, A, Dir>>,
 V : Borrow<Q>,
 {
-    type VertexMut = Option<&'a mut AdjVertex<VLabel, MapTo, A, Dir>>;
+    type VertexMut = Option<&'a mut AdjVertex<VLabel, MapTo, R, A, Dir>>;
 
-    fn vertex_mut(&'a mut self, from : &'a Q) -> Option<&'a mut AdjVertex<VLabel, MapTo, A, Dir>> {
+    fn vertex_mut(&'a mut self, from : &'a Q) -> Option<&'a mut AdjVertex<VLabel, MapTo, R, A, Dir>> {
         self.map.get_mut(from)
     }
 }
@@ -125,7 +172,7 @@ V : Borrow<Q>,
 impl<'a, U, MapFrom, MapTo, V, Q, VLabel, S> GraphLikeEntry<'a, Q>
 for AdjGraph<U, MapFrom, S, Concrete, Directed>
 where 
-MapFrom : for<'c> map::MapEntry<'c, Key = V, Value = AdjVertex<VLabel, MapTo, Concrete, Directed>>,
+MapFrom : for<'c> map::MapEntry<'c, Key = V, Value = AdjVertex<VLabel, MapTo, (), Concrete, Directed>>,
 V : Borrow<Q>,
 Q : ToOwned<Owned = V>,
 {
@@ -144,7 +191,7 @@ pub struct AdjGraphEntry<T, U> {
 impl<'a, U, MapFrom, MapTo, V, Q,  VLabel, S> GraphLikeEntry<'a, Q>
 for AdjGraph<U, MapFrom, S, Concrete, Undirected>
 where 
-MapFrom : map::FixedMap<Q, Key = V, Value = AdjVertex<VLabel, MapTo, Concrete, Undirected>>,
+MapFrom : map::FixedMap<Q, Key = V, Value = AdjVertex<VLabel, MapTo, (), Concrete, Undirected>>,
 V : Borrow<Q>,
 Q : ToOwned<Owned = V>,
 {
@@ -155,10 +202,10 @@ Q : ToOwned<Owned = V>,
     }
 }
 
-impl<'a, U, MapFrom, MapTo, V, Q, VLabel, S, D> GraphLikeEntry<'a, Q>
+impl<'a, U, MapFrom, MapTo, V, Q, VLabel, S, D, R> GraphLikeEntry<'a, Q>
 for  AdjGraph<U, MapFrom, S, Abstract, D>
 where 
-MapFrom : map::FixedMap<Q, Key = V, Value = AdjVertex<VLabel, MapTo, Abstract, D>>,
+MapFrom : map::FixedMap<Q, Key = V, Value = AdjVertex<VLabel, MapTo, R, Abstract, D>>,
 V : Borrow<Q>,
 Q : ToOwned<Owned = V>,
 {
@@ -168,15 +215,16 @@ Q : ToOwned<Owned = V>,
         AdjGraphEntry { graph : self, vertex : from }
     }
 }
-pub struct AdjVertex<Label, T, A, D> {
+pub struct AdjVertex<Label, T, R, A, D> {
     map : T,
+    rmap : R,
     label : Label,
     is_abstract : PhantomData<(A, D)>,
 }
 
-impl<T : Default, A, D> Default for AdjVertex<(), T, A, D> {
-    fn default() -> AdjVertex<(), T, A, D> {
-        AdjVertex { map : <T as Default>::default(), label : (), is_abstract : PhantomData }
+impl<T : Default, R : Default, A, D> Default for AdjVertex<(), T, R, A, D> {
+    fn default() -> AdjVertex<(), T, R, A, D> {
+        AdjVertex { map : <T as Default>::default(), rmap : <R as Default>::default(), label : (), is_abstract : PhantomData }
     }
 }
 
@@ -232,8 +280,8 @@ impl<'a, I, Label, V> Iterator for NeighborsMut<I, Directed> where I : Iterator<
     }
 }
 
-impl<'b, 'a : 'b, Label : 'b,  MapTo, V : 'b, VLabel, Dir, A> Edges<'b>
-for &'b Option<&'a AdjVertex<VLabel,MapTo, A, Dir>> where
+impl<'b, 'a : 'b, Label : 'b,  MapTo, V : 'b, VLabel, Dir, A, R> Edges<'b>
+for &'b Option<&'a AdjVertex<VLabel,MapTo, R, A, Dir>> where
 &'b MapTo : IntoIterator,
 Neighbors<<&'b MapTo as IntoIterator>::IntoIter, Dir> : Iterator<Item = (&'b V, &'b Label)>,
 {
@@ -250,8 +298,8 @@ Neighbors<<&'b MapTo as IntoIterator>::IntoIter, Dir> : Iterator<Item = (&'b V, 
     }
 }
 
-impl<'b, 'a : 'b, Label : 'b, MapTo, V : 'b, VLabel, Dir, A> EdgesMut<'b>
-for &'b mut Option<&'a mut AdjVertex<VLabel,MapTo, A, Dir>> where
+impl<'b, 'a : 'b, Label : 'b, MapTo, V : 'b, VLabel, Dir, A, R> EdgesMut<'b>
+for &'b mut Option<&'a mut AdjVertex<VLabel,MapTo, R, A, Dir>> where
 &'b mut MapTo : IntoIterator,
 NeighborsMut<<&'b mut MapTo as IntoIterator>::IntoIter, Dir> : Iterator<Item = (&'b V, &'b mut Label)>,
 {
@@ -269,8 +317,8 @@ NeighborsMut<<&'b mut MapTo as IntoIterator>::IntoIter, Dir> : Iterator<Item = (
     }
 }
 
-impl<'c, 'b : 'c, 'a : 'b, Label : 'b, MapTo, V, VLabel, Q, A> Edge<'c, Q> 
-for &'b Option<&'a AdjVertex<VLabel,MapTo, A, Undirected>>
+impl<'c, 'b : 'c, 'a : 'b, Label : 'b, MapTo, V, VLabel, Q, A, R> Edge<'c, Q> 
+for &'b Option<&'a AdjVertex<VLabel,MapTo, R, A, Undirected>>
 where
 MapTo : map::FixedMap<Q, Key = V, Value = *mut Label>,
 V : Borrow<Q>,
@@ -286,8 +334,8 @@ V : Borrow<Q>,
 
 }
 
-impl<'c, 'b : 'c,  'a : 'b, Label : 'b, MapTo, V, VLabel, Q, A> EdgeMut<'c, Q> 
-for &'b mut Option<&'a mut AdjVertex<VLabel,MapTo, A, Undirected>>
+impl<'c, 'b : 'c,  'a : 'b, Label : 'b, MapTo, V, R, VLabel, Q, A> EdgeMut<'c, Q> 
+for &'b mut Option<&'a mut AdjVertex<VLabel,MapTo, R, A, Undirected>>
 where
 MapTo : map::FixedMap<Q, Key = V, Value = *mut Label>,
 V : Borrow<Q>,
@@ -303,8 +351,8 @@ V : Borrow<Q>,
 
 }
 
-impl<'c, 'b : 'c, 'a : 'b, Label : 'b, MapTo, V, VLabel, Q, A> Edge<'c, Q> 
-for &'b Option<&'a AdjVertex<VLabel,MapTo, A, Directed>>
+impl<'c, 'b : 'c, 'a : 'b, Label : 'b, MapTo, V, R, VLabel, Q, A> Edge<'c, Q> 
+for &'b Option<&'a AdjVertex<VLabel,MapTo, R, A, Directed>>
 where
 MapTo : map::FixedMap<Q, Key = V, Value = Label>,
 V : Borrow<Q>,
@@ -319,8 +367,8 @@ V : Borrow<Q>,
 
 }
 
-impl<'c, 'b : 'c, 'a : 'b,  Label : 'b, MapTo, V, VLabel, Q, A> EdgeMut<'c, Q> 
-for &'b mut Option<&'a mut AdjVertex<VLabel,MapTo, A, Directed>>
+impl<'c, 'b : 'c, 'a : 'b,  Label : 'b, MapTo, V, R, VLabel, Q, A> EdgeMut<'c, Q> 
+for &'b mut Option<&'a mut AdjVertex<VLabel,MapTo, R, A, Directed>>
 where
 MapTo : map::FixedMap<Q, Key = V, Value = Label>,
 V : Borrow<Q>,
@@ -338,9 +386,9 @@ V : Borrow<Q>,
 impl<'b, 'a, Label : 'a, MapTo : 'a, V : 'a, Q, T> EdgeEntry<'b, Q> 
 for T 
 where
-T : Entry<'a, Value = AdjVertex<(), MapTo, Concrete, Directed>>,
+T : Entry<'a, Value = AdjVertex<(), MapTo, (), Concrete, Directed>>,
 MapTo : map::Map<Q, Key = V, Value = Label>,
-AdjVertex<(), MapTo, Concrete, Directed> : Default,
+AdjVertex<(), MapTo, (), Concrete, Directed> : Default,
 V : Borrow<Q>,
 Q : ToOwned<Owned = V>,
 {
@@ -352,7 +400,7 @@ Q : ToOwned<Owned = V>,
             .occupied()
             // if the entry doesn't exist, create a new map
             .map(|occ| occ.into_mut())
-            .unwrap_or_else(|vacant| vacant.insert(<AdjVertex<(),MapTo, Concrete, Directed> as Default>::default()))
+            .unwrap_or_else(|vacant| vacant.insert(<AdjVertex<(),MapTo, (), Concrete, Directed> as Default>::default()))
             .map
             .insert(to.to_owned(), label)
     }
@@ -380,10 +428,10 @@ impl<'a, 'b, U, Label, MapTo, MapFrom, V, Q1, Q2, S> EdgeEntry<'b, Q2>
 for AdjGraphEntry<&'a mut AdjGraph<U, MapFrom, S, Concrete, Undirected>, &'a Q1>
 where
 AdjGraph<U, MapFrom, S, Concrete, Undirected> : ConcreteGraphLike<Q2>,
-MapFrom : for<'c> map::MapEntry<'c, Key = V, Value = AdjVertex<(),MapTo, Concrete, Undirected>>,
+MapFrom : for<'c> map::MapEntry<'c, Key = V, Value = AdjVertex<(),MapTo, (), Concrete, Undirected>>,
 MapTo : map::Map<Q2, Key =  V, Value = *mut Label>,
 MapTo : map::Map<Q1>,
-AdjVertex<(),MapTo, Concrete, Undirected> : Default,
+AdjVertex<(),MapTo, (), Concrete, Undirected> : Default,
 V : Borrow<Q1>,
 V : Borrow<Q2>,
 Q2 : ToOwned<Owned = V>,
@@ -408,7 +456,7 @@ Q2 : Eq,
                 .occupied()
                 // if the entry doesn't exist, create a new map
                 .map(|occ| occ.into_mut())
-                .unwrap_or_else(|vacant| vacant.insert(<AdjVertex<(),MapTo, Concrete, Undirected> as Default>::default()))
+                .unwrap_or_else(|vacant| vacant.insert(<AdjVertex<(),MapTo, (), Concrete, Undirected> as Default>::default()))
                 .map;
             // Now insert the edge in the map
             map.insert(to.to_owned(), raw)
@@ -417,7 +465,7 @@ Q2 : Eq,
             let mut map = &mut graph.map.entry(to.to_owned())
                 .occupied()
                 .map(|occ| occ.into_mut())
-                .unwrap_or_else(|vacant| vacant.insert(<AdjVertex<(),MapTo, Concrete, Undirected> as Default>::default()))
+                .unwrap_or_else(|vacant| vacant.insert(<AdjVertex<(),MapTo, (), Concrete, Undirected> as Default>::default()))
                 .map;
             map.insert(from.to_owned(), raw);
         }
@@ -475,12 +523,11 @@ Q2 : Eq,
 }
 
 
-// FIXME? It's not really an entry but we need to check the target exists
-impl<'b, 'a, U, Label, MapTo, MapFrom, V : 'a, VLabel, Q1, Q2, S> EdgeEntry<'b, Q2> 
-for AdjGraphEntry<&'a mut AdjGraph<U, MapFrom, S, Abstract, Directed>, &'a Q1>
+impl<'b, 'a, U, Label, MapTo, MapFrom, V : 'a, VLabel, Q1, Q2> EdgeEntry<'b, Q2> 
+for AdjGraphEntry<&'a mut AdjGraph<U, MapFrom, Stable, Abstract, Directed>, &'a Q1>
 where
-AdjGraph<U, MapFrom, S, Abstract, Directed> : ConcreteGraphLike<Q2>,
-MapFrom : map::FixedMap<Q1, Key = V, Value = AdjVertex<VLabel,MapTo, Abstract, Directed>>,
+AdjGraph<U, MapFrom, Stable, Abstract, Directed> : ConcreteGraphLike<Q2>,
+MapFrom : map::FixedMap<Q1, Key = V, Value = AdjVertex<VLabel,MapTo, (), Abstract, Directed>>,
 MapTo : map::Map<Q2, Key = V, Value = Label>,
 V : Borrow<Q1>,
 V : Borrow<Q2>,
@@ -508,13 +555,108 @@ Q2 : ToOwned<Owned = V>,
     }
 }
 
+impl<'b, 'a, U, Label, MapTo, MapFrom, V : 'a, VLabel, Q1, Q2, R> EdgeEntry<'b, Q2> 
+for AdjGraphEntry<&'a mut AdjGraph<U, MapFrom, Unstable, Abstract, Directed>, &'a Q1>
+where
+AdjGraph<U, MapFrom, Unstable, Abstract, Directed> : ConcreteGraphLike<Q2>,
+MapFrom : map::FixedMap<Q1, Key = V, Value = AdjVertex<VLabel,MapTo, R, Abstract, Directed>>,
+MapFrom : map::FixedMap<Q2>,
+MapTo : map::Map<Q2, Key = V, Value = Label>,
+MapTo : map::Map<Q1, Key = V, Value = Label>,
+R : map::RemovableMap<Q1, Key = V, Value = ()> + GrowableMap,
+V : Borrow<Q1>,
+V : Borrow<Q2>,
+Q2 : ToOwned<Owned = V>,
+Q1 : ToOwned<Owned = V>,
+{
+    type Label = Label;
+    type V = V;
+
+    fn link(self, label : Label, to : &'b Q2) -> Option<Label> {
+        let (from, graph) = (self.vertex, self.graph);
+        let mut oldlabel = None;
+        if { graph.map.get_mut(from).map(|e| {oldlabel = e.map.insert(to.to_owned(), label); }).is_some() } {
+               if graph.map.get_mut(to).map(|e| { e.rmap.insert(from.to_owned(), ()); } ).is_some() {
+                   oldlabel
+               } else {
+                   // fallback, remove the partially added label
+                   let e = graph.map.get_mut(from).unwrap();
+                   if let Some(l) = oldlabel {
+                       e.map.insert(to.to_owned(), l);
+                   } else {
+                       e.map.remove(to);
+                   }
+                   None
+               }
+        } else {
+            None
+        }
+    }
+
+    fn unlink(self, to : &'b Q2) -> Option<Label> {
+        let (from, graph) = (self.vertex, self.graph);
+        graph.map
+            .get_mut(to)
+            .map(|e| e.rmap.remove(from))
+            .and_then(|_| graph.map.get_mut(from).and_then(|mut v| v.map.remove(to)))
+    }
+}
+
+impl<'b, 'a, U, Label, MapTo, MapFrom, V : 'a, VLabel, Q1, Q2> EdgeEntry<'b, Q2> 
+for AdjGraphEntry<&'a mut AdjGraph<U, MapFrom, RefCounted, Abstract, Directed>, &'a Q1>
+where
+AdjGraph<U, MapFrom, RefCounted, Abstract, Directed> : ConcreteGraphLike<Q2>,
+MapFrom : map::FixedMap<Q1, Key = V, Value = AdjVertex<VLabel,MapTo, RefCount, Abstract, Directed>>,
+MapFrom : map::FixedMap<Q2>,
+for<'c> MapFrom : map::MapEntry<'c>,
+MapTo : map::Map<Q2, Key = V, Value = Label>,
+V : Borrow<Q1>,
+V : Borrow<Q2>,
+Q2 : ToOwned<Owned = V>,
+Q1 : ToOwned<Owned = V>,
+{
+    type Label = Label;
+    type V = V;
+
+    fn link(self, label : Label, to : &'b Q2) -> Option<Label> {
+        let (from, graph) = (self.vertex, self.graph);
+        let mut oldlabel = None;
+        if { graph.map.get_mut(from).map(|e| {oldlabel = e.map.insert(to.to_owned(), label); }).is_some() } {
+               if graph.map.get_mut(to).map(|e| e.rmap.incr() ).is_some() {
+                   oldlabel
+               } else {
+                   // fallback, remove the partially added label
+                   let e = graph.map.get_mut(from).unwrap();
+                   if let Some(l) = oldlabel {
+                       e.map.insert(to.to_owned(), l);
+                   } else {
+                       e.map.remove(to);
+                   }
+                   None
+               }
+        } else {
+            None
+        }
+    }
+
+    fn unlink(self, to : &'b Q2) -> Option<Label> {
+        let (from, graph) = (self.vertex, self.graph);
+        graph.map
+            .entry(to.to_owned())
+            .occupied()
+            .ok()
+            .map(|mut occ| if occ.get().rmap.decr() { occ.remove(); })
+            .and_then(|_| graph.map.get_mut(from).and_then(|mut v| v.map.remove(to)))
+    }
+}
+
 // FIXME? It's not really an entry but we need to check the target exists
 impl<'a, 'b, U, Label : 'a, MapTo, MapFrom, V : 'a, VLabel, Q1, Q2, S> EdgeEntry<'b, Q2> 
 for AdjGraphEntry<&'a mut AdjGraph<U, MapFrom, S, Abstract, Undirected>, &'a Q1>
 where
 AdjGraph<U, MapFrom, S, Abstract, Undirected> : ConcreteGraphLike<Q2>,
-MapFrom : map::FixedMap<Q1, Key = V, Value = AdjVertex<VLabel,MapTo, Abstract, Undirected>>,
-MapFrom : map::FixedMap<Q2, Key = V, Value = AdjVertex<VLabel,MapTo, Abstract, Undirected>>,
+MapFrom : map::FixedMap<Q1, Key = V, Value = AdjVertex<VLabel,MapTo, (), Abstract, Undirected>>,
+MapFrom : map::FixedMap<Q2, Key = V, Value = AdjVertex<VLabel,MapTo, (), Abstract, Undirected>>,
 MapTo : map::Map<Q1, Key = V, Value = *mut Label>,
 MapTo : map::Map<Q2, Key = V, Value = *mut Label>,
 V : Borrow<Q1>,
@@ -560,8 +702,8 @@ Q1 : ToOwned<Owned = V>,
     }
 }
 
-impl<'b, 'a : 'b, Label, MapTo, Dir> Vertex 
-for  &'b Option<&'a AdjVertex<Label, MapTo, Abstract, Dir>> {
+impl<'b, 'a : 'b, Label, MapTo, Dir, R> Vertex 
+for  &'b Option<&'a AdjVertex<Label, MapTo, R, Abstract, Dir>> {
     type Label = Label;
     type LabelGuard = &'b Label;
 
@@ -575,8 +717,8 @@ for  &'b Option<&'a AdjVertex<Label, MapTo, Abstract, Dir>> {
 
 }
 
-impl<'b, 'a : 'b,  Label, MapTo, Dir> VertexMut 
-for &'b mut Option<&'a mut AdjVertex<Label, MapTo, Abstract, Dir>> {
+impl<'b, 'a : 'b,  Label, MapTo, Dir, R> VertexMut 
+for &'b mut Option<&'a mut AdjVertex<Label, MapTo, R, Abstract, Dir>> {
     type Label = Label;
     type LabelGuard = &'b mut Label;
 
@@ -617,26 +759,57 @@ for AdjGraph<U, MapFrom, S, Concrete, Dir>
     fn contains(&self, _ : &Q) -> bool { true }
 }
 
-impl<'a, MapFrom, Label : 'a, MapTo : 'a, V : 'a, Q, U> VertexEntry 
+impl<'a, MapFrom, Label : 'a, MapTo : 'a, RMap : 'a, V : 'a, Q, U> VertexEntry 
 for AdjGraphEntry<&'a mut AdjGraph<U, MapFrom, Unstable, Abstract, Directed>, &'a Q>
 where
-MapFrom : map::Map<Q, Value = AdjVertex<Label, MapTo, Abstract, Directed>, Key = V>,
+MapFrom : map::Map<Q, Value = AdjVertex<Label, MapTo, RMap, Abstract, Directed>, Key = V>,
+MapFrom : map::FixedMap<V>,
+for<'c> &'c RMap : IntoIterator<Item = (&'c V, &'c ())>,
+MapTo : map::Map<Q>,
 V : Borrow<Q>,
+Q : ToOwned<Owned = V>,
+{
+    type Label = Label;
+
+    fn remove(self) -> Option<Label> {
+        let vertex = &self.vertex;
+        let map = &mut self.graph.map;
+        if let Some(e) = map.remove(vertex) {
+            for (v, _) in (& e.rmap) {
+                map
+                    .get_mut(v)
+                    .map(|rentry| rentry.map.remove(vertex));
+            }
+            Some(e.label)
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a, MapFrom, Label : 'a, MapTo : 'a, V : 'a, Q, U> VertexEntry 
+for AdjGraphEntry<&'a mut AdjGraph<U, MapFrom, RefCounted, Abstract, Directed>, &'a Q>
+where
+for<'c> MapFrom : map::MapEntry<'c, Value = AdjVertex<Label, MapTo, RefCount, Abstract, Directed>, Key = V>,
+V : Borrow<Q>,
+Q : ToOwned<Owned = V>,
 {
     type Label = Label;
 
     fn remove(self) -> Option<Label> {
         self.graph.map
-            .remove(self.vertex)
-            .map(|e| e.label)
+            .entry(self.vertex.to_owned())
+            .occupied()
+            .ok()
+            .and_then(|mut occ| if occ.get().rmap.delete() { Some(occ.remove().label) } else { None })
     }
 }
 
 impl<'a, MapFrom, ELabel : 'a, Label, MapTo : 'a, V : 'a, Q, U> VertexEntry 
 for AdjGraphEntry<&'a mut AdjGraph<U, MapFrom, Unstable, Abstract, Undirected>, &'a Q>
 where
-MapFrom : map::Map<Q, Key = V, Value = AdjVertex<Label, MapTo, Abstract, Undirected>>,
-MapFrom : map::FixedMap<V, Key = V, Value = AdjVertex<Label, MapTo, Abstract, Undirected>>,
+MapFrom : map::Map<Q, Key = V, Value = AdjVertex<Label, MapTo, (), Abstract, Undirected>>,
+MapFrom : map::FixedMap<V, Key = V, Value = AdjVertex<Label, MapTo, (), Abstract, Undirected>>,
 MapTo : map::Map<Q, Key = V, Value = *mut ELabel>,
 for<'c> &'c MapTo : IntoIterator<Item = (&'c V, &'c *mut Label)>,
 V : Borrow<Q>,
@@ -659,11 +832,12 @@ V : Borrow<Q>,
     }
 }
 
-impl<'a, MapFrom, Label, MapTo, V,  S, Dir> StableAbstractGraph
+impl<'a, MapFrom, Label, MapTo, V,  S, Dir, RMap> StableAbstractGraph
 for AdjGraph<UnitFactory, MapFrom, S, Abstract, Dir>
 where
-MapFrom : map::StableMap<V, Key = V, Value = AdjVertex<Label, MapTo, Abstract, Dir>>,
+MapFrom : map::StableMap<V, Key = V, Value = AdjVertex<Label, MapTo, RMap, Abstract, Dir>>,
 MapTo : Default,
+RMap : Default,
 V : Clone,
 {
     type Label = Label;
@@ -672,6 +846,7 @@ V : Clone,
     fn insert(&mut self, vertex : V, label : Label) -> Option<Label> {
         let newentry = AdjVertex { 
             map : <MapTo as Default>::default(),
+            rmap : <RMap as Default>::default(),
             label  : label,
             is_abstract : PhantomData,
         };
@@ -684,11 +859,12 @@ V : Clone,
     }
 }
 
-impl<'a, MapFrom, Label, MapTo, V, Dir, U> StableInternalAbstractGraph 
+impl<'a, MapFrom, Label, MapTo, V, Dir, U, RMap,> StableInternalAbstractGraph 
 for AdjGraph<Factory<U>, MapFrom, Unstable, Abstract, Dir>
 where
-MapFrom : map::StableMap<V, Key = V, Value = AdjVertex<Label, MapTo, Abstract, Dir>>,
+MapFrom : map::StableMap<V, Key = V, Value = AdjVertex<Label, MapTo, RMap, Abstract, Dir>>,
 MapTo : Default,
+RMap : Default,
 U : UUIDFactory<UUID = V>,
 V : ToOwned<Owned = V> + Clone,
 {
@@ -699,6 +875,7 @@ V : ToOwned<Owned = V> + Clone,
         if let Some(uuid) = self.uuids.f.fresh() {
             let newentry = AdjVertex { 
                 map : <MapTo as Default>::default(),
+                rmap : <RMap as Default>::default(),
                 label  : label,
                 is_abstract : PhantomData,
             };
@@ -718,7 +895,7 @@ V : ToOwned<Owned = V> + Clone,
 impl<'a, MapFrom, Label, MapTo, V, Dir, U> StableInternalAbstractGraph
 for AdjGraph<Factory<U>, MapFrom, Stable, Abstract, Dir>
 where
-MapFrom : map::StableMap<V, Value = AdjVertex<Label, MapTo, Abstract, Dir>, Key = V>,
+MapFrom : map::StableMap<V, Value = AdjVertex<Label, MapTo, (), Abstract, Dir>, Key = V>,
 MapTo : Default,
 U : UUIDFactory<UUID = V>,
 V : ToOwned<Owned = V> + Clone,
@@ -730,6 +907,7 @@ V : ToOwned<Owned = V> + Clone,
         if let Some(uuid) = self.uuids.f.fresh() {
             let newentry = AdjVertex { 
                 map : <MapTo as Default>::default(),
+                rmap : (),
                 label  : label,
                 is_abstract : PhantomData,
             };
@@ -745,7 +923,7 @@ V : ToOwned<Owned = V> + Clone,
 impl<'a, MapFrom, Label, MapTo, V, Dir> StableInternalAbstractGraph
 for AdjGraph<UnitFactory, MapFrom, Stable, Abstract, Dir>
 where
-MapFrom : map::InternalStableMap<V, Value = AdjVertex<Label, MapTo, Abstract, Dir>, Key = V>,
+MapFrom : map::InternalStableMap<V, Value = AdjVertex<Label, MapTo, (), Abstract, Dir>, Key = V>,
 MapTo : Default,
 {
     type Label = Label;
@@ -754,6 +932,7 @@ MapTo : Default,
     fn create(&mut self, label : Label) -> Result<(V, Option<Label>), Label> {
             let newentry = AdjVertex { 
                 map : <MapTo as Default>::default(),
+                rmap : (),
                 label  : label,
                 is_abstract : PhantomData,
             };

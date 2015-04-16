@@ -849,7 +849,7 @@ pub mod edgematrix {
         MapOwned,
         FixedMap,
         FixedSizedMap,
-        UnstableFixedSizedMap,
+        RemovableMap,
         IntoOrder,
         FromUsize,
         ToUsize,
@@ -1075,7 +1075,7 @@ pub mod edgematrix {
                 }
             }
 
-    impl<Label, Dir : Direction, K> UnstableFixedSizedMap<EdgeTuple<K, Dir>> for VecMatrix<K, Label, Dir> where EdgeTuple<K, Dir> : Index + Eq {
+    impl<Label, Dir : Direction, K> RemovableMap<EdgeTuple<K, Dir>> for VecMatrix<K, Label, Dir> where EdgeTuple<K, Dir> : Index + Eq {
 
         fn remove(&mut self, edge : &EdgeTuple<K, Dir>) -> Option<Label> {
             let index = edge.index(self.base);

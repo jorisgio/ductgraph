@@ -186,10 +186,8 @@ pub trait InternalStableMap<Q> : InternalMap + FixedMap<Q> {}
 impl<Q, T> InternalStableMap<Q> for T where T : InternalMap + FixedMap<Q> {}
 
 
-/// An unstable mapping from Keys to Values. Supports removal of key-value pairs, but the map has a
-/// fixed size.
-pub trait UnstableFixedSizedMap<Q> : FixedMap<Q> + FixedSizedMap {
-
+/// A mapping from keys to values which supports removal
+pub trait RemovableMap<Q> : MapOwned {
     /// Remove a key-value pair from the map.
     ///
     /// If a value is present in the map for the specified key, this value is removed from the map
@@ -198,6 +196,12 @@ pub trait UnstableFixedSizedMap<Q> : FixedMap<Q> + FixedSizedMap {
     /// properties (`Eq`, `Hash`, `Ord`, ...) match the properties on the keys type.
     fn remove(&mut self, key : &Q) -> Option<Self::Value>;
 }
+
+/// An unstable mapping from Keys to Values. Supports removal of key-value pairs, but the map has a
+/// fixed size.
+pub trait UnstableFixedSizedMap<Q> : FixedMap<Q> + FixedSizedMap + RemovableMap<Q> { }
+
+impl<Q, T> UnstableFixedSizedMap<Q> for T where T : FixedMap<Q> + FixedSizedMap + RemovableMap<Q> {}
 
 /// An unstable mapping from Keys to Values.
 pub trait Map<Q> : UnstableFixedSizedMap<Q> + GrowableMap {}
@@ -285,7 +289,7 @@ impl<K, V> FixedSizedMap for HashMap<K, V> where K : Hash + Eq {
 impl<K, V> GrowableMap for HashMap<K, V> where K : Hash + Eq {}
 impl<K, V, Q> Map<Q> for HashMap<K, V> where K : Hash + Eq, K : Borrow<Q>, Q : Eq + Hash {}
 
-impl<K, V, Q> UnstableFixedSizedMap<Q> for HashMap<K, V> where K : Hash + Eq, Q : Eq + Hash, K : Borrow<Q> {
+impl<K, V, Q> RemovableMap<Q> for HashMap<K, V> where K : Hash + Eq, Q : Eq + Hash, K : Borrow<Q> {
     fn remove(&mut self, key : &Q) -> Option<V> {
         self.remove(key)
     }
@@ -436,7 +440,7 @@ impl<K, V> FixedSizedMap for BTreeMap<K, V> where K : Ord + Eq, {
 impl<K, V> GrowableMap for BTreeMap<K, V> where K : Ord + Eq {}
 impl<K, V, Q> Map<Q> for BTreeMap<K, V> where K : Ord + Eq, K : Borrow<Q>, Q : Ord + Eq {}
 
-impl<K, V, Q> UnstableFixedSizedMap<Q> for BTreeMap<K, V> where K : Ord + Eq, Q : Ord + Eq, K : Borrow<Q> { 
+impl<K, V, Q> RemovableMap<Q> for BTreeMap<K, V> where K : Ord + Eq, Q : Ord + Eq, K : Borrow<Q> { 
 
     fn remove(&mut self, key : &Q) -> Option<V> {
         self.remove(key)
@@ -597,7 +601,7 @@ pub mod vec_list {
         GrowableMap,
         FixedSizedMap,
         InternalIterator,
-        UnstableFixedSizedMap,
+        RemovableMap,
         IntoOrder,
         IterOrder,
         ExtOrdering,
@@ -658,7 +662,7 @@ pub mod vec_list {
 
     impl<K, V, Q> Map<Q> for VecListMap<K, V> where K : Eq, Q : Eq, K : Borrow<Q> {}
 
-    impl<K, V, Q> UnstableFixedSizedMap<Q> for VecListMap<K, V> where K : Eq, Q : Eq, K : Borrow<Q> {
+    impl<K, V, Q> RemovableMap<Q> for VecListMap<K, V> where K : Eq, Q : Eq, K : Borrow<Q> {
 
         fn remove(&mut self, key : &Q) -> Option<V> {
             self.vec.iter()

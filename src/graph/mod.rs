@@ -14,6 +14,12 @@ pub struct Stable;
 /// An unstable graph is a kind of abstract graph allowing both insertion and deletion of vertices.
 pub struct Unstable;
 
+/// A marker of Refcounted graphs
+///
+/// A refcounted graph allows for both insertion and deletion of vertices, but a vertex won't be
+/// removed until the number of edges pointing to it reaches 0.
+pub struct RefCounted;
+
 /// A marker for concrete graphs
 ///
 /// A concrete graph is a kind of graph with no notion of vertex set. Each element of the type of
