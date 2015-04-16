@@ -660,37 +660,33 @@ V : Borrow<Q>,
     }
 }
 
-impl<'a, MapFrom, Label, MapTo : 'a, V : 'a, Q, S, Dir> VertexCreate
-for AdjGraphEntry<&'a mut AdjGraph<UnitFactory, MapFrom, S, Abstract, Dir>, &'a Q>
+impl<'a, MapFrom, Label, MapTo, V,  S, Dir> StableAbstractGraph
+for AdjGraph<UnitFactory, MapFrom, S, Abstract, Dir>
 where
-MapFrom : map::StableMap<Q, Key = V, Value = AdjVertex<Label, MapTo, Abstract, Dir>>,
+MapFrom : map::StableMap<V, Key = V, Value = AdjVertex<Label, MapTo, Abstract, Dir>>,
 MapTo : Default,
-V : Borrow<Q>,
-Q : ToOwned<Owned = V>,
+V : Clone,
 {
     type Label = Label;
     type V = V;
 
-    fn create(self, label : Label) -> Result<(V, Option<Label>), Label> {
+    fn insert(&mut self, vertex : V, label : Label) -> Option<Label> {
         let newentry = AdjVertex { 
             map : <MapTo as Default>::default(),
             label  : label,
             is_abstract : PhantomData,
         };
-        let map = &mut self.graph.map;
-        let vertex = self.vertex;
-        Ok((vertex.to_owned(), map
-            .insert(vertex.to_owned(), newentry)
+        self.map
+            .insert(vertex.clone(), newentry)
             .map(|mut e| {
-                 let new = map.get_mut(vertex).unwrap();
+                 let new = self.map.get_mut(&vertex).unwrap();
                  mem::swap(&mut new.map, &mut e.map);
-                  e.label }))
-            )
+                  e.label })
     }
 }
 
-impl<'a, MapFrom, Label, MapTo, V, Dir, U> VertexCreate
-for &'a mut AdjGraph<Factory<U>, MapFrom, Unstable, Abstract, Dir>
+impl<'a, MapFrom, Label, MapTo, V, Dir, U> StableInternalAbstractGraph 
+for AdjGraph<Factory<U>, MapFrom, Unstable, Abstract, Dir>
 where
 MapFrom : map::StableMap<V, Key = V, Value = AdjVertex<Label, MapTo, Abstract, Dir>>,
 MapTo : Default,
@@ -700,18 +696,17 @@ V : ToOwned<Owned = V> + Clone,
     type Label = Label;
     type V = V;
 
-    fn create(self, label : Label) -> Result<(V, Option<Label>), Label> {
+    fn create(&mut self, label : Label) -> Result<(V, Option<Label>), Label> {
         if let Some(uuid) = self.uuids.f.fresh() {
             let newentry = AdjVertex { 
                 map : <MapTo as Default>::default(),
                 label  : label,
                 is_abstract : PhantomData,
             };
-            let map = &mut self.map;
             Ok((uuid.to_owned(),
-                    map.insert(uuid.to_owned(), newentry)
+                    self.map.insert(uuid.clone(), newentry)
                     .map(|mut e| {
-                        let new = map.get_mut(&uuid).unwrap();
+                        let new = self.map.get_mut(&uuid).unwrap();
                         mem::swap(&mut new.map, &mut e.map);
                         e.label })))
         } else {
@@ -721,8 +716,8 @@ V : ToOwned<Owned = V> + Clone,
 }
 
 // Optimized version for Stable graph : we won't add twice the same vertex
-impl<'a, MapFrom, Label, MapTo, V, Dir, U> VertexCreate
-for &'a mut AdjGraph<Factory<U>, MapFrom, Stable, Abstract, Dir>
+impl<'a, MapFrom, Label, MapTo, V, Dir, U> StableInternalAbstractGraph
+for AdjGraph<Factory<U>, MapFrom, Stable, Abstract, Dir>
 where
 MapFrom : map::StableMap<V, Value = AdjVertex<Label, MapTo, Abstract, Dir>, Key = V>,
 MapTo : Default,
@@ -732,7 +727,7 @@ V : ToOwned<Owned = V> + Clone,
     type Label = Label;
     type V = V;
 
-    fn create(self, label : Label) -> Result<(V, Option<Label>), Label> {
+    fn create(&mut self, label : Label) -> Result<(V, Option<Label>), Label> {
         if let Some(uuid) = self.uuids.f.fresh() {
             let newentry = AdjVertex { 
                 map : <MapTo as Default>::default(),
@@ -740,16 +735,16 @@ V : ToOwned<Owned = V> + Clone,
                 is_abstract : PhantomData,
             };
             let map = &mut self.map;
-            map.insert(uuid.to_owned(), newentry);
-            Ok((uuid.to_owned(), None))
+            map.insert(uuid.clone(), newentry);
+            Ok((uuid, None))
         } else {
             Err(label)
         }
     }
 }
 
-impl<'a, MapFrom, Label, MapTo, V, Dir> VertexCreate
-for &'a mut AdjGraph<UnitFactory, MapFrom, Stable, Abstract, Dir>
+impl<'a, MapFrom, Label, MapTo, V, Dir> StableInternalAbstractGraph
+for AdjGraph<UnitFactory, MapFrom, Stable, Abstract, Dir>
 where
 MapFrom : map::InternalStableMap<V, Value = AdjVertex<Label, MapTo, Abstract, Dir>, Key = V>,
 MapTo : Default,
@@ -757,7 +752,7 @@ MapTo : Default,
     type Label = Label;
     type V = V;
 
-    fn create(self, label : Label) -> Result<(V, Option<Label>), Label> {
+    fn create(&mut self, label : Label) -> Result<(V, Option<Label>), Label> {
             let newentry = AdjVertex { 
                 map : <MapTo as Default>::default(),
                 label  : label,

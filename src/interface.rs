@@ -195,26 +195,39 @@ pub trait VertexEntry {
     fn remove(self) -> Option<Self::Label>;
 }
 
-/// Vertex construction operation.
-pub trait VertexCreate {
-    /// The type of a vertex label.
-    type Label;
-    /// The type of a vertex reference.
-    type V;
-
-    /// Add a new vertex in the graph with the specified label.
-    ///
-    /// If the addition succeeded, a reference to the newly added vertex is returned.
-    /// If this interface is used on a vertex entry, a vertex with this reference might already
-    /// exists in the graph. In this case, the label is updated and the old label is returned.
-    ///
-    /// If the addition fails, the given label is returned back.
-    fn create(self, label : Self::Label) ->  Result<(Self::V, Option<Self::Label>), Self::Label>;
-}
-
 /// A graph tructure.
 pub trait Graph {
     type ELabel;
     type Label;
     type V;
+}
+
+pub trait ConcreteGraph<Q> : Graph {
+
+    fn add_edge(&mut self, from : &Q, to : &Q, label : Self::ELabel) -> Option<Self::ELabel>;
+    fn remove_edge(&mut self, from : &Q, to : &Q) -> Option<Self::ELabel>;
+    fn edge_label(&self, from : &Q, to : &Q) -> Option<& Self::ELabel>;
+    fn edge_label_mut(&mut self, from : &Q, to : &Q) -> Option<&mut Self::ELabel>;
+}
+
+pub trait FixedAbstractGraph<Q> : ConcreteGraph<Q> {
+
+    fn label(&self) -> Option<&Self::Label>;
+    fn label_mut(&mut self) -> Option<&Self::Label>;
+}
+
+pub trait StableAbstractGraph {
+    type Label;
+    type V;
+    fn insert(&mut self, v : Self::V, label : Self::Label) -> Option<Self::Label>;
+}
+
+pub trait StableInternalAbstractGraph {
+    type Label;
+    type V;
+    fn create(&mut self, label : Self::Label) -> Result<(Self::V, Option<Self::Label>), Self::Label>;
+}
+
+pub trait AbstractGraph<Q> : FixedAbstractGraph<Q> {
+    fn remove(&mut self, v : &Q) -> Option<Self::Label>;
 }

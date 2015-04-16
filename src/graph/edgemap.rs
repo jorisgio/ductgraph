@@ -513,6 +513,7 @@ Dir : Direction,
     type Label = VLabel;
     type LabelGuard = &'b VLabel;
 
+    #[inline]
     fn label(self) -> Option<&'b VLabel> {
         self.vertex
     }
@@ -526,6 +527,7 @@ Dir : Direction,
     type Label = VLabel;
     type LabelGuard = &'b VLabel;
 
+    #[inline]
     fn label(self) -> Option<&'b VLabel> {
         self.vertex.as_ref().map(|l| &**l)
     }
@@ -539,6 +541,7 @@ Dir : Direction,
     type Label = VLabel;
     type LabelGuard = &'b mut VLabel;
 
+    #[inline]
     fn label_mut(self) -> Option<&'b mut VLabel> {
         self.vertex.as_mut().map(|l| &mut**l)
     }
@@ -558,6 +561,7 @@ Map : map::Map<EdgeTuple<V, Dir>, Value = Label, Key = EdgeTuple<V, Dir>>,
     type Label = Label;
     type LabelGuard = &'b Label;
 
+    #[inline]
     fn edge_label(self, to : &'c  Q2) -> Option<&'b Label> {
         self.map.get(&EdgeTuple::new(self.q.to_owned(), to.to_owned()))
     }
@@ -577,6 +581,7 @@ Map : map::FixedMap<EdgeTuple<V, Dir>, Value = Label, Key = EdgeTuple<V, Dir>>,
     type Label = Label;
     type LabelGuard = &'b Label;
 
+    #[inline]
     fn edge_label(self, to : &'c Q2) -> Option<&'b Label> {
         self.map.get(&EdgeTuple::new(self.q.to_owned(), to.to_owned()))
     }
@@ -596,6 +601,7 @@ Map : map::FixedMap<EdgeTuple<V, Dir>, Value = Label, Key = EdgeTuple<V, Dir>>,
     type Label = Label;
     type LabelGuard = &'b mut Label;
 
+    #[inline]
     fn edge_label_mut(self, to : &'c Q2) -> Option<&'b mut Label> {
         self.map.get_mut(&EdgeTuple::new(self.q.to_owned(), to.to_owned()))
     }
@@ -736,25 +742,22 @@ Dir : Direction
     }
 }
 
-impl<'a, Label, Map, VMap, Q, Dir, V, S> VertexCreate
-for (&'a mut MapGraph<UnitFactory, Map, VMap, S , Abstract, Dir>, &'a Q)
+impl<Label, Map, VMap, Dir, V, S> StableAbstractGraph
+for MapGraph<UnitFactory, Map, VMap, S , Abstract, Dir>
 where
 Dir : Direction,
-V : Borrow<Q>,
-Q : ToOwned<Owned = V>,
 VMap : map::StableMap<V, Value = Label, Key = V>,
 {
     type V = V;
     type Label = Label;
 
-    fn create(self, label : Label) -> Result<(V, Option<Label>), Label> {
-        let (graph, vertex) = self;
-        Ok((vertex.to_owned(), graph.vmap.insert(vertex.to_owned(), label)))
+    fn insert(&mut self, vertex : V, label : Label) -> Option<Label> {
+        self.vmap.insert(vertex, label)
     }
 }
 
-impl<'a, Label, Map, VMap, Dir, V> VertexCreate
-for &'a mut MapGraph<InternalFactory, Map, VMap, Stable , Abstract, Dir>
+impl<Label, Map, VMap, Dir, V> StableInternalAbstractGraph
+for MapGraph<InternalFactory, Map, VMap, Stable , Abstract, Dir>
 where
 Dir : Direction,
 VMap : map::InternalStableMap<V, Value = Label, Key = V>,
@@ -762,13 +765,13 @@ VMap : map::InternalStableMap<V, Value = Label, Key = V>,
     type V = V;
     type Label = Label;
 
-    fn create(self, label : Label) -> Result<(V, Option<Label>), Label> {
+    fn create(&mut self, label : Label) -> Result<(V, Option<Label>), Label> {
         self.vmap.append(label).map(|v| (v, None))
     }
 }
         
-impl<'a, Label, Map, VMap, F , Dir, V, S> VertexCreate
-for &'a mut MapGraph<Factory<F>, Map, VMap, S , Abstract, Dir>
+impl<'a, Label, Map, VMap, F , Dir, V, S> StableInternalAbstractGraph
+for MapGraph<Factory<F>, Map, VMap, S , Abstract, Dir>
 where
 Dir : Direction,
 V : Clone,
@@ -778,15 +781,14 @@ VMap : map::Map<V, Value = Label, Key = V>,
     type V = V;
     type Label = Label;
 
-    fn create(self, label : Label) -> Result<(V, Option<Label>), Label> {
+    fn create(&mut self, label : Label) -> Result<(V, Option<Label>), Label> {
         if let Some(uuid) = self.uuids.f.fresh() {
-            Ok((uuid.to_owned(), self.vmap.insert(uuid, label)))
+            Ok((uuid.clone(), self.vmap.insert(uuid, label)))
         } else {
             Err(label)
         }
     }
 }
-
 
 
 impl<Map, VMap, V, Q, F, Dir> ConcreteGraphLike<Q>
