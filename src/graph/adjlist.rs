@@ -589,12 +589,11 @@ for &'b mut Option<&'a mut AdjVertex<Label, MapTo, Abstract, Dir>> {
 impl<MapFrom, U, Q, Dir> ConcreteGraphLike< Q>
 for AdjGraph<U, MapFrom, Unstable, Abstract, Dir>
 where 
-for<'a> AdjGraph<U, MapFrom, Unstable, Abstract, Dir> : GraphLike<'a, Q>,
-for<'a> <AdjGraph<U, MapFrom, Unstable, Abstract, Dir> as GraphLike<'a, Q>>::Vertex : Vertex,
+MapFrom : FixedMap<Q>,
 {
     #[inline]
     fn contains(&self, v : &Q) -> bool {
-        self.vertex(v).exists()
+        self.map.contains_key(v)
     }
 }
 

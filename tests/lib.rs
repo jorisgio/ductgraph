@@ -3,6 +3,9 @@
 #[macro_use]
 pub mod edges;
 
+#[macro_use]
+pub mod vertices;
+
 mod adjlist {
     mod abstr {
         mod directed {
@@ -40,6 +43,70 @@ mod adjlist {
                         (graph, 0, 1, 2, 3)
                     }
                 }
+
+                generic_vertices_tests! {
+                    {
+                        let mut graph : MyGraph<&'static str, &'static str> = AdjGraph::new();
+                        assert_eq!(graph.create("hey"), Ok((0, None)));
+                        assert_eq!(graph.create("hey"), Ok((1, None)));
+                        (graph, 0 , 1, 2)
+                    }
+                }
+
+                create_vertex_tests! {
+                    {
+                        let mut graph : MyGraph<&'static str, &'static str> = AdjGraph::new();
+                        assert_eq!(graph.create("hey"), Ok((0, None)));
+                        assert_eq!(graph.create("hey"), Ok((1, None)));
+                        (graph, 0 , 1, 2)
+                    }
+                }
+
+                pub mod unstable {
+                    use ::ductgraph::map::{
+                        HashMap,
+                        BTreeMap,
+                    };
+                    use ::ductgraph::graph::*;
+                    use ::ductgraph::graph::adjlist::{
+                        AdjGraph,
+                        AdjVertex,
+                    };
+                    use ::ductgraph::uuid::{
+                        Factory,
+                    };
+                    use ::ductgraph::interface::*;
+
+                    adjgraph_type!(MyUnstableGraph, Abstract, Directed, Unstable, Factory<usize>, usize, HashMap, BTreeMap);
+
+                    generic_vertices_tests! {
+                        {
+                            let mut graph : MyUnstableGraph<&'static str, &'static str> = AdjGraph::new();
+                            assert_eq!(graph.create("hey"), Ok((0, None)));
+                            assert_eq!(graph.create("hey"), Ok((1, None)));
+                            (graph, 0 , 1, 2)
+                        }
+                    }
+
+                    create_vertex_tests! {
+                        {
+                            let mut graph : MyUnstableGraph<&'static str, &'static str> = AdjGraph::new();
+                            assert_eq!(graph.create("hey"), Ok((0, None)));
+                            assert_eq!(graph.create("hey"), Ok((1, None)));
+                            (graph, 0 , 1, 2)
+                        }
+                    }
+
+                    unstable_vertices_tests! {
+                        {
+                            let mut graph : MyUnstableGraph<&'static str, &'static str> = AdjGraph::new();
+                            assert_eq!(graph.create("hey"), Ok((0, None)));
+                            assert_eq!(graph.create("hey"), Ok((1, None)));
+                            (graph, 0 , 1, 2)
+                        }
+                    }
+                }
+
             }
         }
         mod undirected {
@@ -242,7 +309,7 @@ mod edgemap {
 
             directed_edges_tests! {
                 {
-                let graph : MyGraph<u32> = MapGraph::new();
+                    let graph : MyGraph<u32> = MapGraph::new();
                     (graph, 0 , 1)
                 }
             }
@@ -272,7 +339,7 @@ mod edgemap {
 
             undirected_edges_tests! {
                 {
-                let graph : MyGraph<u32> = MapGraph::new();
+                    let graph : MyGraph<u32> = MapGraph::new();
                     (graph, 0 , 1)
                 }
             }
